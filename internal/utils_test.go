@@ -17,6 +17,18 @@ func TestHexToBinary(t *testing.T) {
 	}
 }
 
+func TestDf(t *testing.T) {
+	msg := "8D4840D6202CC371C32CE0576098"
+
+	actual, _ := Df(msg)
+
+	want := 17
+
+	if actual != int64(want) {
+		t.Fatalf("DF incorrect, wanted %v got %v", want, actual)
+	}
+}
+
 func BenchmarkHexToBinary(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		HexToBinary("8D4840D6202CC371C32CE0576098")

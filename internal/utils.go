@@ -1,6 +1,9 @@
 package internal
 
-import "strings"
+import (
+	"strconv"
+	"strings"
+)
 
 func HexToBinary(hex string) (string, error) {
 	m := map[string]string{
@@ -29,4 +32,18 @@ func HexToBinary(hex string) (string, error) {
 	}
 
 	return bin.String(), nil
+}
+
+func Df(msg string) (int64, error) {
+	bin, err := HexToBinary(msg[0:2])
+	if err != nil {
+		println("Error converting DF to binary: ", err)
+	}
+
+	df, err := strconv.ParseInt(bin[0:5], 2, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	return df, nil
 }

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 )
@@ -37,7 +38,7 @@ func HexToBinary(hex string) (string, error) {
 func Df(msg string) (int64, error) {
 	bin, err := HexToBinary(msg[0:2])
 	if err != nil {
-		println("Error converting DF to binary: ", err)
+		return 0, err
 	}
 
 	df, err := strconv.ParseInt(bin[0:5], 2, 32)
@@ -46,4 +47,22 @@ func Df(msg string) (int64, error) {
 	}
 
 	return df, nil
+}
+
+func Icao(msg string) (string, error) {
+	df, err := Df(msg)
+	if err != nil {
+		return "", err
+	}
+
+	var addr string
+
+	// currently only supporting DF17
+	if df != 17 {
+		return "", errors.New("currently only DF17 messages are supported")
+	}
+
+	addr = msg[2:8]
+
+	return addr, nil
 }

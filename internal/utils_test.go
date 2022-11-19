@@ -29,6 +29,18 @@ func TestDf(t *testing.T) {
 	}
 }
 
+func TestIcao(t *testing.T) {
+	msg := "8D406B902015A678D4D220AA4BDA"
+
+	actual, _ := Icao(msg)
+
+	want := "406B90"
+
+	if actual != want {
+		t.Fatalf("ICAO incorrect, wanted %v got %v", want, actual)
+	}
+}
+
 func BenchmarkHexToBinary(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		HexToBinary("8D4840D6202CC371C32CE0576098")

@@ -66,3 +66,26 @@ func Icao(msg string) (string, error) {
 
 	return addr, nil
 }
+
+func Typecode(msg string) (int64, error) {
+	df, err := Df(msg)
+	if err != nil {
+		return 0, err
+	}
+
+	if df != 17 {
+		return 0, nil
+	}
+
+	bin, err := HexToBinary(msg[8:10])
+	if err != nil {
+		return 0, nil
+	}
+
+	typecode, err := strconv.ParseInt(bin[0:5], 2, 32)
+	if err != nil {
+		return 0, err
+	}
+
+	return typecode, nil
+}

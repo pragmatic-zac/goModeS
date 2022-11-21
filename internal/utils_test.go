@@ -41,6 +41,18 @@ func TestIcao(t *testing.T) {
 	}
 }
 
+func TestTypecode(t *testing.T) {
+	msg := "8D4840D6202CC371C32CE0576098"
+
+	actual, _ := Typecode(msg)
+
+	want := int64(4)
+
+	if actual != want {
+		t.Fatalf("ICAO incorrect, wanted %v got %v", want, actual)
+	}
+}
+
 func BenchmarkHexToBinary(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		HexToBinary("8D4840D6202CC371C32CE0576098")

@@ -7,6 +7,33 @@ import (
 	"strings"
 )
 
+func Df(msg string) (int64, error) {
+	res, err := internal.Df(msg)
+	if err != nil {
+		return 0, err
+	}
+
+	return res, nil
+}
+
+func Icao(msg string) (string, error) {
+	res, err := internal.Icao(msg)
+	if err != nil {
+		return "", err
+	}
+
+	return res, nil
+}
+
+func Typecode(msg string) (int64, error) {
+	res, err := internal.Typecode(msg)
+	if err != nil {
+		return 0, err
+	}
+
+	return res, nil
+}
+
 func Category(msg string) (int64, error) {
 	tc, err := internal.Typecode(msg)
 	if err != nil {

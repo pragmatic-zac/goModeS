@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -88,4 +89,39 @@ func Typecode(msg string) (int64, error) {
 	}
 
 	return typecode, nil
+}
+
+func Modulo(x float64, y float64) float64 {
+	if y == 0.0 {
+		panic("Y may not be zero.") // panic or error?
+	}
+
+	return x - y*math.Floor(x/y)
+}
+
+func CprNL(lat float64) float64 {
+	if lat == 0 {
+		return 59
+	}
+
+	if math.Abs(lat) == 87 {
+		return 2
+	}
+
+	if lat > 87 || lat < -87 {
+		return 1
+	}
+
+	nz := 15.0
+
+	denom := math.Acos(1 - ((1 - math.Cos(math.Pi/(2*nz))) / math.Pow(math.Cos((math.Pi/180)*lat), 2)))
+
+	nl := math.Floor(2 * math.Pi / denom)
+
+	return nl
+}
+
+func RoundFloat(val float64, precision uint) float64 {
+	ratio := math.Pow(10, float64(precision))
+	return math.Round(val*ratio) / ratio
 }

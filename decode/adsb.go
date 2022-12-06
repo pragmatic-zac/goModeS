@@ -175,3 +175,101 @@ func AirbornePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time) (flo
 
 	return internal.RoundFloat(lat, 5), internal.RoundFloat(lon, 5), nil
 }
+
+func SurfacePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time, latRef float64, lonRef float64) (float64, float64, error) {
+	bin0, err := internal.HexToBinary(msg0)
+	if err != nil {
+		return 0, 0, err
+	}
+	bin1, err := internal.HexToBinary(msg1)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	cprLatEven, err := strconv.ParseInt(bin0[54:71], 2, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	latCprE := float64(cprLatEven) / 131072
+
+	cprLonEven, err := strconv.ParseInt(bin0[71:88], 2, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	lonCprE := float64(cprLonEven) / 131072
+
+	cprLatOdd, err := strconv.ParseInt(bin1[54:71], 2, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	latCprO := float64(cprLatOdd) / 131072
+
+	cprLonOdd, err := strconv.ParseInt(bin1[71:88], 2, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	lonCprO := float64(cprLonOdd) / 131072
+
+	airDLatEven := 90.0 / 60.0
+	airDLatOdd := 90.0 / 59.0
+
+	j := int(math.Floor(59*latCprE - 60*latCprO + 0.5))
+
+	// north hemisphere
+	latEvenN := airDLatEven * (float64(j%60) + latCprE)
+	latOddN := airDLatOdd * (float64(j%59) + latCprO)
+
+	// south hemisphere
+	latEvenS := latEvenN - 90
+	latOddS := latOddN - 90
+
+	var latE float64
+	var latO float64
+	if latRef > 0 {
+		latE = latEvenN
+		latO = latOddN
+	} else {
+		latE = latEvenS
+		latO = latOddS
+	}
+
+	// check if both are in same lat zone
+	if internal.CprNL(latE) != internal.CprNL(latO) {
+		return 0, 0, nil
+	}
+
+	var lat float64
+	var lon float64
+	if t0.After(t1) {
+		lat = latE
+		nl := internal.CprNL(latE)
+		ni := math.Max(nl, 1)
+		m := math.Floor(lonCprE*(nl-1.0) - lonCprO*nl + 0.5)
+		lon = (90 / ni) * (math.Mod(m, ni) + lonCprE)
+	} else {
+		lat = latO
+		nl := internal.CprNL(latO)
+		ni := math.Max(nl-1, 1)
+		m := math.Floor(lonCprE*(nl-1.0) - lonCprO*nl + 0.5)
+		lon = (90 / ni) * (math.Mod(m, ni) + lonCprO)
+	}
+
+	// there are four possible solutions
+	lons := []float64{lon, lon + 90, lon + 180, lon + 270}
+
+	// make sure all lon values are valid, between -180 and 180
+	for i, f := range lons {
+		lons[i] = math.Mod(f+180, 360) - 180
+	}
+
+	// we want the one closest to the receiver
+	var closest float64
+	for _, f := range lons {
+		abs := math.Abs(lonRef - f)
+		if abs < closest {
+			closest = f
+		}
+	}
+
+	return internal.RoundFloat(lat, 5), internal.RoundFloat(lon, 5), nil
+}

@@ -71,6 +71,25 @@ func TestSurfacePosition(t *testing.T) {
 	}
 }
 
+func TestSurfacePositionWithRef(t *testing.T) {
+	msg0 := "8C4841753A9A153237AEF0F275BE"
+	latRef := 51.990
+	lonRef := 4.375
+
+	actualLat, actualLon, _ := SurfacePositionWithRef(msg0, latRef, lonRef)
+
+	wantedLat := 52.320561
+	wantedLon := 4.735735
+
+	if actualLat != wantedLat {
+		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, actualLat)
+	}
+
+	if actualLon != wantedLon {
+		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, actualLon)
+	}
+}
+
 func BenchmarkAirbornePosition(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		msg0 := "8D40621D58C382D690C8AC2863A7"

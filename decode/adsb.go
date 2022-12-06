@@ -273,3 +273,51 @@ func SurfacePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time, latRe
 
 	return internal.RoundFloat(lat, 5), internal.RoundFloat(lon, 5), nil
 }
+
+func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (float64, float64, error) {
+	msgBin, err := internal.HexToBinary(msg)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	bin := msgBin[32:]
+
+	cprLatInt, err := strconv.ParseInt(bin[22:39], 2, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	cprLat := float64(cprLatInt) / 131072
+
+	cprLonInt, err := strconv.ParseInt(bin[39:56], 2, 64)
+	if err != nil {
+		return 0, 0, err
+	}
+	cprLon := float64(cprLonInt) / 131072
+
+	i, _ := strconv.Atoi(bin[21:22])
+	var dLat float64
+	if i != 0 {
+		dLat = 90.0 / 59.0
+	} else {
+		dLat = 90.0 / 60.0
+	}
+
+	j := math.Floor(latRef/dLat) + math.Floor(0.5+((math.Mod(latRef, dLat)/dLat)-cprLat))
+
+	lat := dLat * (j + cprLat)
+
+	ni := internal.CprNL(lat) - float64(i)
+
+	var dLon float64
+	if ni > 0 {
+		dLon = 90.0 / ni
+	} else {
+		dLon = 90.0
+	}
+
+	m := math.Floor(lonRef/dLon) + math.Floor(0.5+((math.Mod(lonRef, dLon)/dLon)-cprLon))
+
+	lon := dLon * (m + cprLon)
+
+	return internal.RoundFloat(lat, 6), internal.RoundFloat(lon, 6), nil
+}

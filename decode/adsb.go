@@ -321,3 +321,68 @@ func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (float64
 
 	return internal.RoundFloat(lat, 6), internal.RoundFloat(lon, 6), nil
 }
+
+func SurfaceVelocity(msg string) (float64, float64, int32, string, error) {
+	tc, err := internal.Typecode(msg)
+	if err != nil {
+		return 0, 0, 0, "", err
+	}
+
+	if tc < 5 || tc > 8 {
+		err = errors.New("not a surface message, expecting a Typecode between 5 and 8")
+		return 0, 0, 0, "", err
+	}
+
+	msgBin, err := internal.HexToBinary(msg)
+	if err != nil {
+		return 0, 0, 0, "", err
+	}
+
+	bin := msgBin[32:]
+
+	// ground track
+	var trk float64
+	trkStatus, _ := strconv.Atoi(bin[12:13])
+	if trkStatus == 1 {
+		tmp, err := strconv.ParseInt(bin[13:20], 2, 64)
+		if err != nil {
+			return 0, 0, 0, "", err
+		}
+
+		trk = float64(tmp) * 360 / 128
+		trk = internal.RoundFloat(trk, 1)
+	} else {
+		trk = 0
+	}
+
+	// ground speed
+	mov, err := strconv.ParseInt(bin[5:12], 2, 64)
+	if err != nil {
+		return 0, 0, 0, "", err
+	}
+
+	var spd float64
+	if mov == 0 || mov > 124 {
+		spd = 0
+	} else if mov == 1 {
+		spd = 0
+	} else if mov == 124 {
+		spd = 175.0
+	} else {
+		mvmt := []int64{2, 9, 13, 39, 94, 109, 124}
+		kts := []float64{0.125, 1, 2, 15, 70, 100, 175}
+		step := []float64{0.125, 0.25, 0.5, 1, 2, 5}
+
+		var idx int
+
+		for i := 0; i < len(mvmt); i++ {
+			if mov >= mvmt[i] && mov <= mvmt[i+1] {
+				idx = i + 1
+			}
+		}
+
+		spd = kts[idx-1] + float64(mov-mvmt[idx-1])*step[idx-1]
+	}
+
+	return spd, trk, 0, "GS", nil
+}

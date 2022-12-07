@@ -90,6 +90,33 @@ func TestSurfacePositionWithRef(t *testing.T) {
 	}
 }
 
+func TestSurfaceVelocity(t *testing.T) {
+	msg := "8C4841753A9A153237AEF0F275BE"
+
+	spd, trk, vertRate, spdType, _ := SurfaceVelocity(msg)
+
+	wantedSpd := 17.0
+	wantedTrk := 92.8
+	wantedVertRate := 0
+	wantedSpdType := "GS"
+
+	if spd != wantedSpd {
+		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, spd)
+	}
+
+	if trk != wantedTrk {
+		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, trk)
+	}
+
+	if vertRate != int32(wantedVertRate) {
+		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, vertRate)
+	}
+
+	if spdType != wantedSpdType {
+		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, spdType)
+	}
+}
+
 func BenchmarkAirbornePosition(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		msg0 := "8D40621D58C382D690C8AC2863A7"

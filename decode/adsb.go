@@ -9,6 +9,14 @@ import (
 	"time"
 )
 
+type Velocity struct {
+	speed      int64
+	angle      float64
+	vertRate   int64
+	speedType  string
+	rateSource string
+}
+
 func Df(msg string) (int64, error) {
 	res, err := internal.Df(msg)
 	if err != nil {
@@ -385,4 +393,141 @@ func SurfaceVelocity(msg string) (float64, float64, int32, string, error) {
 	}
 
 	return spd, trk, 0, "GS", nil
+}
+
+func AirborneVelocity(msg string) (Velocity, error) {
+	tc, err := internal.Typecode(msg)
+	if err != nil {
+		return Velocity{}, err
+	}
+
+	if tc != 19 {
+		err = errors.New("not an airborne velocity message, expecting typecode 19")
+	}
+
+	msgBin, err := internal.HexToBinary(msg)
+	if err != nil {
+		return Velocity{}, err
+	}
+
+	bin := msgBin[32:]
+
+	subtype, err := strconv.ParseInt(bin[5:8], 2, 64)
+	if err != nil {
+		return Velocity{}, err
+	}
+
+	// check velocity components
+	ew, err := strconv.ParseInt(bin[14:24], 2, 64)
+	if err != nil {
+		return Velocity{}, err
+	}
+
+	ns, err := strconv.ParseInt(bin[25:35], 2, 64)
+	if err != nil {
+		return Velocity{}, err
+	}
+
+	if ew == 0 || ns == 0 {
+		return Velocity{}, err
+	}
+
+	var trk float64
+	var spd int64
+	var spdType string
+	var vrSource string
+	var vs int64
+
+	if subtype == 1 || subtype == 2 {
+		ewBit, _ := strconv.Atoi(bin[13:14]) // direction EW
+		nsBit, _ := strconv.Atoi(bin[24:25]) // direction NS
+		if ewBit == 1 {
+			ewBit = -1
+		}
+		if nsBit == 1 {
+			nsBit = -1
+		}
+
+		// check if velocity is supersonic
+		if subtype == 2 {
+			ewBit = ewBit * 4
+			nsBit = nsBit * 4
+		}
+
+		ew = ew - 1
+		ns = ns - 1
+
+		vwe := int64(ewBit) * ew
+		vsn := int64(nsBit) * ns
+
+		spd = int64(math.Sqrt(float64(vsn*vsn + vwe*vwe)))
+
+		trk = math.Atan2(float64(vwe), float64(vsn))
+		trk = trk * (180 / math.Pi)
+		if trk < 0 {
+			trk = trk + 360
+		}
+		trk = internal.RoundFloat(trk, 2)
+		spdType = "GS"
+	} else {
+		status, _ := strconv.Atoi(bin[13:14])
+		if status == 0 {
+			trk = 0
+		} else {
+			trk = float64(ew) / 1024.0 * 360.0
+			trk = internal.RoundFloat(trk, 2)
+		}
+
+		if ns == 0 {
+			spd = 0
+		} else {
+			spd = ns - 1
+		}
+
+		// supersonic check
+		if subtype == 4 && spd != 0 {
+			spd = spd * 4
+		}
+
+		tBit, _ := strconv.Atoi(bin[24:25])
+		if tBit == 0 {
+			spdType = "IAS"
+		} else {
+			spdType = "TAS"
+		}
+	}
+
+	srcBit, _ := strconv.Atoi(bin[35:36])
+	if srcBit == 0 {
+		vrSource = "GNSS"
+	} else {
+		vrSource = "BARO"
+	}
+
+	var vrSign int64
+	vrSignBit, _ := strconv.Atoi(bin[36:37])
+	if vrSignBit == 1 {
+		vrSign = -1
+	}
+
+	vr, err := strconv.ParseInt(bin[37:46], 2, 64)
+	if err != nil {
+		return Velocity{}, err
+	}
+
+	if vr == 0 {
+		vs = 0
+	} else {
+		vs = vrSign * (vr - 1) * 64
+	}
+
+	v := Velocity{
+		speed:      spd,
+		angle:      trk,
+		vertRate:   vs,
+		speedType:  spdType,
+		rateSource: vrSource,
+	}
+
+	return v, nil
 }

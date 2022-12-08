@@ -117,6 +117,60 @@ func TestSurfaceVelocity(t *testing.T) {
 	}
 }
 
+func TestAirborneVelocityGS(t *testing.T) {
+	msg := "8D485020994409940838175B284F"
+
+	vel, _ := AirborneVelocity(msg)
+
+	wantedSpd := int64(159)
+	wantedTrk := 182.88
+	wantedVertRate := int64(-832)
+	wantedSpdType := "GS"
+
+	if vel.speed != wantedSpd {
+		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, vel.speed)
+	}
+
+	if vel.angle != wantedTrk {
+		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, vel.angle)
+	}
+
+	if vel.vertRate != wantedVertRate {
+		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, vel.vertRate)
+	}
+
+	if vel.speedType != wantedSpdType {
+		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, vel.speedType)
+	}
+}
+
+func TestAirborneVelocityTAS(t *testing.T) {
+	msg := "8DA05F219B06B6AF189400CBC33F"
+
+	vel, _ := AirborneVelocity(msg)
+
+	wantedSpd := int64(375)
+	wantedTrk := 243.98
+	wantedVertRate := int64(-2304)
+	wantedSpdType := "TAS"
+
+	if vel.speed != wantedSpd {
+		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, vel.speed)
+	}
+
+	if vel.angle != wantedTrk {
+		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, vel.angle)
+	}
+
+	if vel.vertRate != wantedVertRate {
+		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, vel.vertRate)
+	}
+
+	if vel.speedType != wantedSpdType {
+		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, vel.speedType)
+	}
+}
+
 func BenchmarkAirbornePosition(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		msg0 := "8D40621D58C382D690C8AC2863A7"
@@ -138,5 +192,13 @@ func BenchmarkSurfacePosition(b *testing.B) {
 		lonRef := 4.375
 
 		SurfacePosition(msg0, msg1, t0, t1, latRef, lonRef)
+	}
+}
+
+func BenchmarkAirborneVelocity(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		msg := "8DA05F219B06B6AF189400CBC33F"
+
+		AirborneVelocity(msg)
 	}
 }

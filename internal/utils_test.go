@@ -53,6 +53,18 @@ func TestTypecode(t *testing.T) {
 	}
 }
 
+func TestCrc(t *testing.T) {
+	msg := "8D406B902015A678D4D220AA4BDA"
+
+	actual, _ := Crc(msg, false)
+
+	want := 0
+
+	if actual != want {
+		t.Fatalf("CRC incorrect, wanted %v got %v", want, actual)
+	}
+}
+
 func BenchmarkHexToBinary(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		HexToBinary("8D4840D6202CC371C32CE0576098")

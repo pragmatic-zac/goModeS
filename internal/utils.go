@@ -125,3 +125,55 @@ func RoundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
 	return math.Round(val*ratio) / ratio
 }
+
+func Crc(msg string, encode bool) (int, error) {
+	if len(msg) != 26 {
+		return 0, errors.New("message should be exactly 26 characters long")
+	}
+
+	G := []int{255, 250, 4, 128}
+
+	if encode {
+		msg = msg[:len(msg)-6] + "000000"
+	}
+
+	msgBin, err := HexToBinary(msg)
+	if err != nil {
+		return 0, err
+	}
+	msgBinSplit := wrap(msgBin, 8)
+	mBytes := make([]int, 0, len(msgBinSplit))
+	for _, s := range msgBinSplit {
+		i, _ := strconv.ParseInt(s, 2, 64)
+		mBytes = append(mBytes, int(i))
+	}
+
+	var iByte int
+	for iByte = 0; iByte < len(mBytes)-3; iByte++ {
+		for ibit := 0; ibit < 8; ibit++ {
+			mask := 0x80 >> uint(ibit)
+			bits := mBytes[iByte] & mask
+
+			if bits > 0 {
+				mBytes[iByte] = mBytes[iByte] ^ (G[0] >> ibit)
+				mBytes[iByte+1] = mBytes[iByte+1] ^ (0xFF & ((G[0]<<8 - ibit) | (G[1] >> ibit)))
+				mBytes[iByte+2] = mBytes[iByte+2] ^ (0xFF & ((G[1]<<8 - ibit) | (G[2] >> ibit)))
+				mBytes[iByte+3] = mBytes[iByte+3] ^ (0xFF & ((G[2]<<8 - ibit) | (G[3] >> ibit)))
+			}
+		}
+	}
+
+	result := (mBytes[len(mBytes)-3] << 16) | (mBytes[len(mBytes)-2] << 8) | mBytes[len(mBytes)-1]
+
+	return result, nil
+}
+
+func wrap(s string, length int) []string {
+	var lines []string
+
+	for i := 0; i < len(s); i = i + length {
+		lines = append(lines, s[i:i+length])
+	}
+
+	return lines
+}

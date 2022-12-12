@@ -30,7 +30,7 @@ func HexToBinary(hex string) (string, error) {
 	var bin strings.Builder
 
 	for i := 0; i < len(hex); i++ {
-		bin.WriteString(m[string(hex[i])])
+		bin.WriteString(m[strings.ToUpper(string(hex[i]))])
 	}
 
 	return bin.String(), nil

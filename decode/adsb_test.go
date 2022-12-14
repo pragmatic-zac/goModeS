@@ -44,17 +44,17 @@ func TestAirbornePosition(t *testing.T) {
 		lonRef: nil,
 	}
 
-	actualLat, actualLon, _ := AirbornePosition(&input)
+	pos, _ := AirbornePosition(&input)
 
 	wantedLat := 52.2572
 	wantedLon := 3.91937
 
-	if actualLat != wantedLat {
-		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, actualLat)
+	if pos.latitude != wantedLat {
+		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, pos.latitude)
 	}
 
-	if actualLon != wantedLon {
-		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, actualLon)
+	if pos.longitude != wantedLon {
+		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, pos.longitude)
 	}
 }
 

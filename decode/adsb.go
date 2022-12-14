@@ -10,8 +10,8 @@ import (
 )
 
 type Position struct {
-	latitude  float32
-	longitude float32
+	latitude  float64
+	longitude float64
 }
 
 type Velocity struct {
@@ -100,15 +100,14 @@ func Callsign(msg string) (string, error) {
 	return callsign.String(), nil
 }
 
-// TODO: input and output structs
-func AirbornePosition(input *PositionInput) (float64, float64, error) {
+func AirbornePosition(input *PositionInput) (Position, error) {
 	bin0, err := internal.HexToBinary(input.msg0)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	bin1, err := internal.HexToBinary(input.msg1)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 
 	mb0 := bin0[32:]
@@ -123,30 +122,30 @@ func AirbornePosition(input *PositionInput) (float64, float64, error) {
 		input.msg0, input.msg1 = input.msg1, input.msg0
 		input.t0, input.t1 = input.t1, input.t0
 	} else {
-		return 0, 0, errors.New("both an even + odd message are required")
+		return Position{}, errors.New("both an even + odd message are required")
 	}
 
 	cprLatEven, err := strconv.ParseInt(mb0[22:39], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	latCprE := float64(cprLatEven) / 131072
 
 	cprLonEven, err := strconv.ParseInt(mb0[39:56], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	lonCprE := float64(cprLonEven) / 131072
 
 	cprLatOdd, err := strconv.ParseInt(mb1[22:39], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	latCprO := float64(cprLatOdd) / 131072
 
 	cprLonOdd, err := strconv.ParseInt(mb1[39:56], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	lonCprO := float64(cprLonOdd) / 131072
 
@@ -169,7 +168,7 @@ func AirbornePosition(input *PositionInput) (float64, float64, error) {
 	}
 
 	if internal.CprNL(latEven) != internal.CprNL(latOdd) {
-		return 0, 0, nil
+		return Position{}, err
 	}
 
 	var lat float64
@@ -178,7 +177,7 @@ func AirbornePosition(input *PositionInput) (float64, float64, error) {
 	if input.t0.After(input.t1) {
 		lat = latEven
 
-		var nl float64 = internal.CprNL(lat)
+		var nl = internal.CprNL(lat)
 
 		ni := math.Max(nl, 1)
 
@@ -201,7 +200,12 @@ func AirbornePosition(input *PositionInput) (float64, float64, error) {
 		lon = lon - 360
 	}
 
-	return internal.RoundFloat(lat, 5), internal.RoundFloat(lon, 5), nil
+	pos := Position{
+		latitude:  internal.RoundFloat(lat, 5),
+		longitude: internal.RoundFloat(lon, 5),
+	}
+
+	return pos, nil
 }
 
 func SurfacePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time, latRef float64, lonRef float64) (float64, float64, error) {

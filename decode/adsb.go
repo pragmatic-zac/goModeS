@@ -186,7 +186,7 @@ func AirbornePosition(input *PositionInput) (float64, float64, error) {
 
 		lon = (360 / ni) * (internal.Modulo(m, ni) + lonCprE)
 	} else {
-		lat = float64(latOdd)
+		lat = latOdd
 
 		nl := internal.CprNL(lat)
 
@@ -194,7 +194,7 @@ func AirbornePosition(input *PositionInput) (float64, float64, error) {
 
 		m := math.Floor(lonCprE*(nl-1) - lonCprO*nl + 0.5)
 
-		lon = (360 / ni) * (internal.Modulo(m, ni) + float64(lonCprO))
+		lon = (360 / ni) * (internal.Modulo(m, ni) + lonCprO)
 	}
 
 	if lon > 180.0 {

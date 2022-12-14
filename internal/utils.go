@@ -50,6 +50,8 @@ func Df(msg string) (int64, error) {
 	return df, nil
 }
 
+// TODO: do not export these (lowercase)
+// TODO: add support for other message types
 func Icao(msg string) (string, error) {
 	df, err := Df(msg)
 	if err != nil {
@@ -127,7 +129,7 @@ func RoundFloat(val float64, precision uint) float64 {
 }
 
 func Crc(msg string, encode bool) (int, error) {
-	if len(msg) != 26 {
+	if len(msg) != 28 {
 		return 0, errors.New("message should be exactly 26 characters long")
 	}
 
@@ -144,7 +146,7 @@ func Crc(msg string, encode bool) (int, error) {
 	msgBinSplit := wrap(msgBin, 8)
 	mBytes := make([]int, 0, len(msgBinSplit))
 	for _, s := range msgBinSplit {
-		i, _ := strconv.ParseInt(s, 2, 64)
+		i, _ := strconv.ParseInt(s, 2, 32)
 		mBytes = append(mBytes, int(i))
 	}
 
@@ -167,6 +169,8 @@ func Crc(msg string, encode bool) (int, error) {
 
 	return result, nil
 }
+
+// try using the inbuilt crc in standard library
 
 func wrap(s string, length int) []string {
 	var lines []string

@@ -9,10 +9,15 @@ import (
 	"time"
 )
 
+type Position struct {
+	latitude  float32
+	longitude float32
+}
+
 type Velocity struct {
-	speed      int64
+	speed      float64
 	angle      float64
-	vertRate   int64
+	vertRate   int32
 	speedType  string
 	rateSource string
 }
@@ -86,6 +91,7 @@ func Callsign(msg string) (string, error) {
 	return callsign.String(), nil
 }
 
+// TODO: input and output structs
 func AirbornePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time) (float64, float64, error) {
 	bin0, err := internal.HexToBinary(msg0)
 	if err != nil {
@@ -330,20 +336,20 @@ func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (float64
 	return internal.RoundFloat(lat, 6), internal.RoundFloat(lon, 6), nil
 }
 
-func SurfaceVelocity(msg string) (float64, float64, int32, string, error) {
+func SurfaceVelocity(msg string) (Velocity, error) {
 	tc, err := internal.Typecode(msg)
 	if err != nil {
-		return 0, 0, 0, "", err
+		return Velocity{}, err
 	}
 
 	if tc < 5 || tc > 8 {
 		err = errors.New("not a surface message, expecting a Typecode between 5 and 8")
-		return 0, 0, 0, "", err
+		return Velocity{}, err
 	}
 
 	msgBin, err := internal.HexToBinary(msg)
 	if err != nil {
-		return 0, 0, 0, "", err
+		return Velocity{}, err
 	}
 
 	bin := msgBin[32:]
@@ -354,7 +360,7 @@ func SurfaceVelocity(msg string) (float64, float64, int32, string, error) {
 	if trkStatus == 1 {
 		tmp, err := strconv.ParseInt(bin[13:20], 2, 64)
 		if err != nil {
-			return 0, 0, 0, "", err
+			return Velocity{}, err
 		}
 
 		trk = float64(tmp) * 360 / 128
@@ -366,7 +372,7 @@ func SurfaceVelocity(msg string) (float64, float64, int32, string, error) {
 	// ground speed
 	mov, err := strconv.ParseInt(bin[5:12], 2, 64)
 	if err != nil {
-		return 0, 0, 0, "", err
+		return Velocity{}, err
 	}
 
 	var spd float64
@@ -392,7 +398,14 @@ func SurfaceVelocity(msg string) (float64, float64, int32, string, error) {
 		spd = kts[idx-1] + float64(mov-mvmt[idx-1])*step[idx-1]
 	}
 
-	return spd, trk, 0, "GS", nil
+	v := Velocity{
+		speed:      spd,
+		angle:      trk,
+		vertRate:   0,
+		speedType:  "GS",
+		rateSource: "",
+	}
+	return v, nil
 }
 
 func AirborneVelocity(msg string) (Velocity, error) {
@@ -436,7 +449,7 @@ func AirborneVelocity(msg string) (Velocity, error) {
 	var spd int64
 	var spdType string
 	var vrSource string
-	var vs int64
+	var vs int32
 
 	if subtype == 1 || subtype == 2 {
 		ewBit, _ := strconv.Atoi(bin[13:14]) // direction EW
@@ -518,11 +531,11 @@ func AirborneVelocity(msg string) (Velocity, error) {
 	if vr == 0 {
 		vs = 0
 	} else {
-		vs = vrSign * (vr - 1) * 64
+		vs = int32(vrSign * (vr - 1) * 64)
 	}
 
 	v := Velocity{
-		speed:      spd,
+		speed:      float64(spd),
 		angle:      trk,
 		vertRate:   vs,
 		speedType:  spdType,

@@ -100,7 +100,7 @@ func Callsign(msg string) (string, error) {
 	return callsign.String(), nil
 }
 
-func AirbornePosition(input *PositionInput) (Position, error) {
+func AirbornePosition(input PositionInput) (Position, error) {
 	bin0, err := internal.HexToBinary(input.msg0)
 	if err != nil {
 		return Position{}, err

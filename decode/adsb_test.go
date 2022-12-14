@@ -44,7 +44,7 @@ func TestAirbornePosition(t *testing.T) {
 		lonRef: nil,
 	}
 
-	pos, _ := AirbornePosition(&input)
+	pos, _ := AirbornePosition(input)
 
 	wantedLat := 52.2572
 	wantedLon := 3.91937
@@ -205,7 +205,7 @@ func BenchmarkAirbornePosition(b *testing.B) {
 			lonRef: nil,
 		}
 
-		AirbornePosition(&input)
+		AirbornePosition(input)
 	}
 }
 

@@ -35,7 +35,16 @@ func TestAirbornePosition(t *testing.T) {
 	t0 := time.Unix(int64(1457996402), 0)
 	t1 := time.Unix(int64(1457996400), 0)
 
-	actualLat, actualLon, _ := AirbornePosition(msg0, msg1, t0, t1)
+	input := PositionInput{
+		msg0:   msg0,
+		msg1:   msg1,
+		t0:     t0,
+		t1:     t1,
+		latRef: nil,
+		lonRef: nil,
+	}
+
+	actualLat, actualLon, _ := AirbornePosition(&input)
 
 	wantedLat := 52.2572
 	wantedLon := 3.91937
@@ -178,7 +187,16 @@ func BenchmarkAirbornePosition(b *testing.B) {
 		t0 := time.Unix(int64(1457996402), 0)
 		t1 := time.Unix(int64(1457996400), 0)
 
-		AirbornePosition(msg0, msg1, t0, t1)
+		input := PositionInput{
+			msg0:   msg0,
+			msg1:   msg1,
+			t0:     t0,
+			t1:     t1,
+			latRef: nil,
+			lonRef: nil,
+		}
+
+		AirbornePosition(&input)
 	}
 }
 

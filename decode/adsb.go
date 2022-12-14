@@ -22,6 +22,15 @@ type Velocity struct {
 	rateSource string
 }
 
+type PositionInput struct {
+	msg0   string
+	msg1   string
+	t0     time.Time
+	t1     time.Time
+	latRef *float64
+	lonRef *float64
+}
+
 func Df(msg string) (int64, error) {
 	res, err := internal.Df(msg)
 	if err != nil {
@@ -92,12 +101,12 @@ func Callsign(msg string) (string, error) {
 }
 
 // TODO: input and output structs
-func AirbornePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time) (float64, float64, error) {
-	bin0, err := internal.HexToBinary(msg0)
+func AirbornePosition(input *PositionInput) (float64, float64, error) {
+	bin0, err := internal.HexToBinary(input.msg0)
 	if err != nil {
 		return 0, 0, err
 	}
-	bin1, err := internal.HexToBinary(msg1)
+	bin1, err := internal.HexToBinary(input.msg1)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -105,13 +114,18 @@ func AirbornePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time) (flo
 	mb0 := bin0[32:]
 	mb1 := bin1[32:]
 
-	// add oe1 and oe2 checks
+	// check if the user mixed up odd/even messages
+	oddEven0, _ := strconv.ParseInt(mb0[21:22], 2, 32)
+	oddEven1, _ := strconv.ParseInt(mb1[21:22], 2, 32)
+	if oddEven0 == 0 && oddEven1 == 1 {
 
-	// fix these names
-	// we need the first one just to parse the int value
-	// we need the second one to be a float and that's what we're really working with
-	// maybe split this into another function and use a pointer?
-	// this seems like a ridiculous amount of allocation
+	} else if oddEven0 == 1 && oddEven1 == 0 {
+		input.msg0, input.msg1 = input.msg1, input.msg0
+		input.t0, input.t1 = input.t1, input.t0
+	} else {
+		return 0, 0, errors.New("both an even + odd message are required")
+	}
+
 	cprLatEven, err := strconv.ParseInt(mb0[22:39], 2, 64)
 	if err != nil {
 		return 0, 0, err
@@ -161,7 +175,7 @@ func AirbornePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time) (flo
 	var lat float64
 	var lon float64
 
-	if t0.After(t1) {
+	if input.t0.After(input.t1) {
 		lat = latEven
 
 		var nl float64 = internal.CprNL(lat)

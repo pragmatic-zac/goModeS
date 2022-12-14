@@ -208,37 +208,37 @@ func AirbornePosition(input *PositionInput) (Position, error) {
 	return pos, nil
 }
 
-func SurfacePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time, latRef float64, lonRef float64) (float64, float64, error) {
-	bin0, err := internal.HexToBinary(msg0)
+func SurfacePosition(input PositionInput) (Position, error) {
+	bin0, err := internal.HexToBinary(input.msg0)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
-	bin1, err := internal.HexToBinary(msg1)
+	bin1, err := internal.HexToBinary(input.msg1)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 
 	cprLatEven, err := strconv.ParseInt(bin0[54:71], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	latCprE := float64(cprLatEven) / 131072
 
 	cprLonEven, err := strconv.ParseInt(bin0[71:88], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	lonCprE := float64(cprLonEven) / 131072
 
 	cprLatOdd, err := strconv.ParseInt(bin1[54:71], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	latCprO := float64(cprLatOdd) / 131072
 
 	cprLonOdd, err := strconv.ParseInt(bin1[71:88], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	lonCprO := float64(cprLonOdd) / 131072
 
@@ -257,7 +257,7 @@ func SurfacePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time, latRe
 
 	var latE float64
 	var latO float64
-	if latRef > 0 {
+	if *input.latRef > 0 {
 		latE = latEvenN
 		latO = latOddN
 	} else {
@@ -267,12 +267,12 @@ func SurfacePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time, latRe
 
 	// check if both are in same lat zone
 	if internal.CprNL(latE) != internal.CprNL(latO) {
-		return 0, 0, nil
+		return Position{}, err
 	}
 
 	var lat float64
 	var lon float64
-	if t0.After(t1) {
+	if input.t0.After(input.t1) {
 		lat = latE
 		nl := internal.CprNL(latE)
 		ni := math.Max(nl, 1)
@@ -297,13 +297,18 @@ func SurfacePosition(msg0 string, msg1 string, t0 time.Time, t1 time.Time, latRe
 	// we want the one closest to the receiver
 	var closest float64
 	for _, f := range lons {
-		abs := math.Abs(lonRef - f)
+		abs := math.Abs(*input.lonRef - f)
 		if abs < closest {
 			closest = f
 		}
 	}
 
-	return internal.RoundFloat(lat, 5), internal.RoundFloat(lon, 5), nil
+	pos := Position{
+		latitude:  internal.RoundFloat(lat, 5),
+		longitude: internal.RoundFloat(lon, 5),
+	}
+
+	return pos, nil
 }
 
 func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (float64, float64, error) {

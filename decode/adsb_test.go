@@ -66,17 +66,26 @@ func TestSurfacePosition(t *testing.T) {
 	latRef := 51.990
 	lonRef := 4.375
 
-	actualLat, actualLon, _ := SurfacePosition(msg0, msg1, t0, t1, latRef, lonRef)
+	input := PositionInput{
+		msg0:   msg0,
+		msg1:   msg1,
+		t0:     t0,
+		t1:     t1,
+		latRef: &latRef,
+		lonRef: &lonRef,
+	}
+
+	pos, _ := SurfacePosition(input)
 
 	wantedLat := 52.32061
 	wantedLon := 4.73473
 
-	if actualLat != wantedLat {
-		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, actualLat)
+	if pos.latitude != wantedLat {
+		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, pos.latitude)
 	}
 
-	if actualLon != wantedLon {
-		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, actualLon)
+	if pos.longitude != wantedLon {
+		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, pos.longitude)
 	}
 }
 
@@ -209,7 +218,16 @@ func BenchmarkSurfacePosition(b *testing.B) {
 		latRef := 51.990
 		lonRef := 4.375
 
-		SurfacePosition(msg0, msg1, t0, t1, latRef, lonRef)
+		input := PositionInput{
+			msg0:   msg0,
+			msg1:   msg1,
+			t0:     t0,
+			t1:     t1,
+			latRef: &latRef,
+			lonRef: &lonRef,
+		}
+
+		SurfacePosition(input)
 	}
 }
 

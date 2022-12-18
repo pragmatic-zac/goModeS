@@ -31,7 +31,7 @@ type PositionInput struct {
 	lonRef *float64
 }
 
-func Df(msg string) (int64, error) {
+func Df(msg string) (int, error) {
 	res, err := internal.Df(msg)
 	if err != nil {
 		return 0, err

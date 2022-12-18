@@ -36,7 +36,7 @@ func HexToBinary(hex string) (string, error) {
 	return bin.String(), nil
 }
 
-func Df(msg string) (int64, error) {
+func Df(msg string) (int, error) {
 	bin, err := HexToBinary(msg[0:2])
 	if err != nil {
 		return 0, err
@@ -47,11 +47,9 @@ func Df(msg string) (int64, error) {
 		return 0, err
 	}
 
-	return df, nil
+	return int(df), nil
 }
 
-// TODO: do not export these (lowercase)
-// TODO: add support for other message types
 func Icao(msg string) (string, error) {
 	df, err := Df(msg)
 	if err != nil {
@@ -60,9 +58,8 @@ func Icao(msg string) (string, error) {
 
 	var addr string
 
-	// currently only supporting DF17
 	if df != 17 {
-		return "", errors.New("currently only DF17 messages are supported")
+		return "", errors.New("only DF 17 supported at this time")
 	}
 
 	addr = msg[2:8]
@@ -130,7 +127,7 @@ func RoundFloat(val float64, precision uint) float64 {
 
 func Crc(msg string, encode bool) (int, error) {
 	if len(msg) != 28 {
-		return 0, errors.New("message should be exactly 26 characters long")
+		return 0, errors.New("message should be exactly 28 characters long")
 	}
 
 	G := []int{255, 250, 4, 128}
@@ -170,8 +167,6 @@ func Crc(msg string, encode bool) (int, error) {
 	return result, nil
 }
 
-// try using the inbuilt crc in standard library
-
 func wrap(s string, length int) []string {
 	var lines []string
 
@@ -180,4 +175,13 @@ func wrap(s string, length int) []string {
 	}
 
 	return lines
+}
+
+func contains(s *[]int, e *int) bool {
+	for _, a := range *s {
+		if a == *e {
+			return true
+		}
+	}
+	return false
 }

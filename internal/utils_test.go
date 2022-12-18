@@ -29,7 +29,7 @@ func TestDf(t *testing.T) {
 
 	want := 17
 
-	if actual != int64(want) {
+	if actual != want {
 		t.Fatalf("DF incorrect, wanted %v got %v", want, actual)
 	}
 }

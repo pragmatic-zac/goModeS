@@ -94,17 +94,17 @@ func TestSurfacePositionWithRef(t *testing.T) {
 	latRef := 51.990
 	lonRef := 4.375
 
-	actualLat, actualLon, _ := SurfacePositionWithRef(msg0, latRef, lonRef)
+	pos, _ := SurfacePositionWithRef(msg0, latRef, lonRef)
 
 	wantedLat := 52.320561
 	wantedLon := 4.735735
 
-	if actualLat != wantedLat {
-		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, actualLat)
+	if pos.Latitude != wantedLat {
+		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, pos.Latitude)
 	}
 
-	if actualLon != wantedLon {
-		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, actualLon)
+	if pos.Longitude != wantedLon {
+		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, pos.Longitude)
 	}
 }
 

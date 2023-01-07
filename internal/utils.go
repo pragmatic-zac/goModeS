@@ -147,10 +147,9 @@ func Crc(msg string, encode bool) (int, error) {
 		mBytes = append(mBytes, int(i))
 	}
 
-	var iByte int
-	for iByte = 0; iByte < len(mBytes)-3; iByte++ {
+	for iByte := 0; iByte < len(mBytes)-3; iByte++ {
 		for ibit := 0; ibit < 8; ibit++ {
-			mask := 0x80 >> uint(ibit)
+			mask := 0x80 >> int(ibit)
 			bits := mBytes[iByte] & mask
 
 			if bits > 0 {

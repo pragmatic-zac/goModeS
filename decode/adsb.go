@@ -10,25 +10,25 @@ import (
 )
 
 type Position struct {
-	latitude  float64
-	longitude float64
+	Latitude  float64
+	Longitude float64
 }
 
 type Velocity struct {
-	speed      float64
-	angle      float64
-	vertRate   int32
-	speedType  string
-	rateSource string
+	Speed      float64
+	Angle      float64
+	VertRate   int32
+	SpeedType  string
+	RateSource string
 }
 
 type PositionInput struct {
-	msg0   string
-	msg1   string
-	t0     time.Time
-	t1     time.Time
-	latRef *float64
-	lonRef *float64
+	Msg0   string
+	Msg1   string
+	T0     time.Time
+	T1     time.Time
+	LatRef *float64
+	LonRef *float64
 }
 
 func Df(msg string) (int, error) {
@@ -101,11 +101,11 @@ func Callsign(msg string) (string, error) {
 }
 
 func AirbornePosition(input PositionInput) (Position, error) {
-	bin0, err := internal.HexToBinary(input.msg0)
+	bin0, err := internal.HexToBinary(input.Msg0)
 	if err != nil {
 		return Position{}, err
 	}
-	bin1, err := internal.HexToBinary(input.msg1)
+	bin1, err := internal.HexToBinary(input.Msg1)
 	if err != nil {
 		return Position{}, err
 	}
@@ -119,8 +119,8 @@ func AirbornePosition(input PositionInput) (Position, error) {
 	if oddEven0 == 0 && oddEven1 == 1 {
 
 	} else if oddEven0 == 1 && oddEven1 == 0 {
-		input.msg0, input.msg1 = input.msg1, input.msg0
-		input.t0, input.t1 = input.t1, input.t0
+		input.Msg0, input.Msg1 = input.Msg1, input.Msg0
+		input.T0, input.T1 = input.T1, input.T0
 	} else {
 		return Position{}, errors.New("both an even + odd message are required")
 	}
@@ -174,7 +174,7 @@ func AirbornePosition(input PositionInput) (Position, error) {
 	var lat float64
 	var lon float64
 
-	if input.t0.After(input.t1) {
+	if input.T0.After(input.T1) {
 		lat = latEven
 
 		var nl = internal.CprNL(lat)
@@ -201,19 +201,19 @@ func AirbornePosition(input PositionInput) (Position, error) {
 	}
 
 	pos := Position{
-		latitude:  internal.RoundFloat(lat, 5),
-		longitude: internal.RoundFloat(lon, 5),
+		Latitude:  internal.RoundFloat(lat, 5),
+		Longitude: internal.RoundFloat(lon, 5),
 	}
 
 	return pos, nil
 }
 
 func SurfacePosition(input PositionInput) (Position, error) {
-	bin0, err := internal.HexToBinary(input.msg0)
+	bin0, err := internal.HexToBinary(input.Msg0)
 	if err != nil {
 		return Position{}, err
 	}
-	bin1, err := internal.HexToBinary(input.msg1)
+	bin1, err := internal.HexToBinary(input.Msg1)
 	if err != nil {
 		return Position{}, err
 	}
@@ -257,7 +257,7 @@ func SurfacePosition(input PositionInput) (Position, error) {
 
 	var latE float64
 	var latO float64
-	if *input.latRef > 0 {
+	if *input.LatRef > 0 {
 		latE = latEvenN
 		latO = latOddN
 	} else {
@@ -272,7 +272,7 @@ func SurfacePosition(input PositionInput) (Position, error) {
 
 	var lat float64
 	var lon float64
-	if input.t0.After(input.t1) {
+	if input.T0.After(input.T1) {
 		lat = latE
 		nl := internal.CprNL(latE)
 		ni := math.Max(nl, 1)
@@ -297,15 +297,15 @@ func SurfacePosition(input PositionInput) (Position, error) {
 	// we want the one closest to the receiver
 	var closest float64
 	for _, f := range lons {
-		abs := math.Abs(*input.lonRef - f)
+		abs := math.Abs(*input.LonRef - f)
 		if abs < closest {
 			closest = f
 		}
 	}
 
 	pos := Position{
-		latitude:  internal.RoundFloat(lat, 5),
-		longitude: internal.RoundFloat(lon, 5),
+		Latitude:  internal.RoundFloat(lat, 5),
+		Longitude: internal.RoundFloat(lon, 5),
 	}
 
 	return pos, nil
@@ -422,11 +422,11 @@ func SurfaceVelocity(msg string) (Velocity, error) {
 	}
 
 	v := Velocity{
-		speed:      spd,
-		angle:      trk,
-		vertRate:   0,
-		speedType:  "GS",
-		rateSource: "",
+		Speed:      spd,
+		Angle:      trk,
+		VertRate:   0,
+		SpeedType:  "GS",
+		RateSource: "",
 	}
 	return v, nil
 }
@@ -558,12 +558,17 @@ func AirborneVelocity(msg string) (Velocity, error) {
 	}
 
 	v := Velocity{
-		speed:      float64(spd),
-		angle:      trk,
-		vertRate:   vs,
-		speedType:  spdType,
-		rateSource: vrSource,
+		Speed:      float64(spd),
+		Angle:      trk,
+		VertRate:   vs,
+		SpeedType:  spdType,
+		RateSource: vrSource,
 	}
 
 	return v, nil
+}
+
+func OddEvenFlag(msg string) int {
+	bin, _ := internal.HexToBinary(msg)
+	return int(bin[53])
 }

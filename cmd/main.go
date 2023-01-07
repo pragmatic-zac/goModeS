@@ -2,25 +2,35 @@ package main
 
 import (
 	"pragmatic-zac/goModeS/decode"
-	"time"
 )
 
 // 8DACD0CF990C2D3250041196585C
 // 8DA41C50E11A3400000000160B30
 // 8DA41C5099103297782403FCA1FC
+// 8DA3FB6F990CAD2CB804120E1E2A
+// 8DAC0BFB99953D88109412D0E7BB
+// 8DA57788221102B4D71820B37C63 - 4
+// 8DA57788990C7A10A0C00A1BB1FF - 19
+// 8DA57788990C7910C0C00B2EDEDF - 19
+// 8DA3FB6F589B909697401DC40C0C - 11
+// 8DA3FB6F589B942D65BC1825EA07 - 11
+// 8DA1701BEA44785EE75C08240817 - 29
 
 // user needs to pass in lat/lon for reference position
 
 func main() {
-	msg := "8DA41C5099103297782403FCA1FC"
+	msg := "8DA3FB6F589B909697401DC40C0C"
+
+	icao, _ := decode.Icao(msg)
+	println(icao)
 
 	tc, _ := decode.Typecode(msg)
 
 	println("message typecode: ", tc)
 
 	// set the time, will need to do this on the time that each msg is received
-	timestamp := time.Now()
-	println("current time is ", timestamp)
+	// timestamp := time.Now()
+	// println("current time is ", timestamp.)
 
 	if tc >= 1 && tc <= 4 {
 		// identification
@@ -41,9 +51,12 @@ func main() {
 
 		if tc >= 5 && tc <= 8 {
 			// surface position
-			//input := decode.PositionInput{}
+			pos, _ := decode.SurfacePositionWithRef(msg, 36.04863, -86.95218)
+			println(pos.Latitude)
 		} else {
 			// airborne position
+			pos, _ := decode.AirbornePositionWithRef(msg, 36.04863, -86.95218)
+			println(pos.Latitude)
 		}
 
 		vel, _ := decode.SurfaceVelocity(msg)

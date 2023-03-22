@@ -2,6 +2,7 @@ package internal
 
 import (
 	"errors"
+	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -57,12 +58,16 @@ func Icao(msg string) (string, error) {
 	}
 
 	var addr string
+	filter := []int{0, 4, 5, 16, 20, 21}
 
-	if df != 17 {
-		return "", errors.New("only DF 17 supported at this time")
+	if df == 11 || df == 17 || df == 18 {
+		addr = msg[2:8]
+	} else if contains(&filter, &df) {
+		c0, _ := Crc(msg, true)
+		c1, _ := strconv.ParseInt(msg[len(msg)-6:], 16, 32)
+		result := c0 ^ int(c1)
+		addr = fmt.Sprintf("%06X", result)
 	}
-
-	addr = msg[2:8]
 
 	return addr, nil
 }

@@ -649,6 +649,42 @@ func CombinedVelocity(msg string) (Velocity, error) {
 	}
 }
 
+func Altitude(msg string) (int, error) {
+	tc, err := internal.Typecode(msg)
+	if err != nil {
+		return 0, err
+	}
+
+	// check for surface position and return 0
+
+	if tc < 9 || tc == 19 || tc > 22 {
+		return 0, errors.New("cannot decode altitude, not an airborne position message")
+	}
+
+	bin, err := internal.HexToBinary(msg)
+	if err != nil {
+		return 0, err
+	}
+
+	msgBin := bin[32:]
+
+	var alt int
+
+	altBin := msgBin[8:20]
+	if tc < 19 {
+		altCode := altBin[0:6] + "0" + altBin[6:]
+		alt, err = internal.Altitude(altCode)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		n, _ := strconv.ParseInt(altBin, 2, 64)
+		alt = int(float64(n) * 3.28084)
+	}
+
+	return alt, nil
+}
+
 func OddEvenFlag(msg string) int {
 	bin, _ := internal.HexToBinary(msg)
 	res, _ := strconv.Atoi(bin[53:54])

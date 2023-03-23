@@ -185,6 +185,93 @@ func Crc(msg string, encode bool) (int, error) {
 	return result, nil
 }
 
+func Altitude(binString string) (int, error) {
+	if len(binString) != 13 {
+		// also check to make sure it's binary?
+		return 0, errors.New("binary string must be 13 bits long")
+	}
+
+	_, err := strconv.ParseInt(binString, 2, 64)
+	if err != nil {
+		return 0, errors.New("input must be a binary string")
+	}
+
+	Mbit := string(binString[6])
+	Qbit := string(binString[8])
+
+	r, _ := strconv.ParseInt(binString, 2, 64)
+	if r == 0 {
+		return 0, nil // altitude unknown or invalid
+	}
+
+	var alt int
+
+	if Mbit == "0" { // unit in ft
+		if Qbit == "1" { // 25ft interval
+			vbin := binString[:6] + binString[7:8] + binString[9:]
+			vint, _ := strconv.ParseInt(vbin, 2, 64)
+			alt = int(vint)*25 - 1000
+		}
+		if Qbit == "0" { // 100ft interval, above 50187.5ft
+			C1 := string(binString[0])
+			A1 := string(binString[1])
+			C2 := string(binString[2])
+			A2 := string(binString[3])
+			C4 := string(binString[4])
+			A4 := string(binString[5])
+			B1 := string(binString[7])
+			B2 := string(binString[9])
+			D2 := string(binString[10])
+			B4 := string(binString[11])
+			D4 := string(binString[12])
+
+			graystr := D2 + D4 + A1 + A2 + A4 + B1 + B2 + B4 + C1 + C2 + C4
+			alt = gray2alt(graystr)
+		}
+	}
+
+	if Mbit == "1" { // unit in meter
+		vbin := binString[:6] + binString[7:]
+		vint, _ := strconv.ParseInt(vbin, 2, 64)
+		alt = int(float64(vint) * 3.28084) // convert to ft
+	}
+
+	return alt, nil
+}
+
+func gray2int(binString string) int {
+	num, _ := strconv.ParseInt(binString, 2, 64)
+	num ^= num >> 8
+	num ^= num >> 4
+	num ^= num >> 2
+	num ^= num >> 1
+	return int(num)
+}
+
+func gray2alt(binString string) int {
+	gc500 := binString[:8]
+	n500 := gray2int(gc500)
+
+	// 100-ft step must be converted first
+	gc100 := binString[8:]
+	n100 := gray2int(gc100)
+
+	if n100 == 0 || n100 == 5 || n100 == 6 {
+		return 0
+	}
+
+	if n100 == 7 {
+		n100 = 5
+	}
+
+	if n500%2 == 1 {
+		n100 = 6 - n100
+	}
+
+	alt := (n500*500 + n100*100) - 1300
+	return alt
+}
+
 func wrap(s string, length int) []string {
 	var lines []string
 

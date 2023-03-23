@@ -6,7 +6,7 @@ import (
 )
 
 // 8DACD0CF990C2D3250041196585C - 19
-// 8DA41C50E11A3400000000160B30
+// 8DA41C50E11A3400000000160B30 - 28
 // 8DA41C5099103297782403FCA1FC - 19
 // 8DA3FB6F990CAD2CB804120E1E2A - 19
 // 8DAC0BFB99953D88109412D0E7BB - 19
@@ -28,7 +28,7 @@ import (
 // user needs to pass in lat/lon for reference position
 
 func main() {
-	msg := "8DA3FB6F589B909697401DC40C0C"
+	msg := "8DA3FB6F990CAD2CB804120E1E2A"
 
 	icao, _ := decode.Icao(msg)
 	println(icao)
@@ -64,24 +64,22 @@ func main() {
 			pos, _ := decode.SurfacePositionWithRef(msg, 36.04863, -86.95218)
 			fmt.Printf("Lat: %f", pos.Latitude)
 			fmt.Printf("Lon: %f", pos.Longitude)
+
+			alt, _ := decode.Altitude(msg)
+			fmt.Printf("altitude: %d\n", alt)
 		} else {
 			// airborne position
 			pos, _ := decode.AirbornePositionWithRef(msg, 36.04863, -86.95218)
 			fmt.Printf("Lat: %f\n", pos.Latitude)
 			fmt.Printf("Lon: %f\n", pos.Longitude)
+
+			// not sure if belongs here
+			alt, _ := decode.Altitude(msg)
+			fmt.Printf("altitude: %d\n", alt)
 		}
 
 		vel, _ := decode.SurfaceVelocity(msg)
-		println(int(vel.Speed))
-	}
-
-	if tc >= 9 && tc <= 18 {
-		// airborne position BARO
-	}
-
-	if tc >= 20 && tc <= 27 {
-		// airborne position GNSS
-		println("airborne position GNSS")
+		fmt.Printf("Surface velocity: %f\n", vel.Speed)
 	}
 
 	println("done")

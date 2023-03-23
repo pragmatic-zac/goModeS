@@ -28,7 +28,7 @@ import (
 // user needs to pass in lat/lon for reference position
 
 func main() {
-	msg := "8DA3FB6F990CAD2CB804120E1E2A"
+	msg := "8DA3FB6F589B909697401DC40C0C"
 
 	icao, _ := decode.Icao(msg)
 	println(icao)

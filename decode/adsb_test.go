@@ -189,6 +189,18 @@ func TestAirborneVelocityTAS(t *testing.T) {
 	}
 }
 
+func TestAltitude(t *testing.T) {
+	msg := "8D40058B58C901375147EFD09357"
+
+	wantedAltitude := 39000
+
+	alt, _ := Altitude(msg)
+
+	if alt != wantedAltitude {
+		t.Fatalf("Altitude incorrect, wanted %v got %v", wantedAltitude, alt)
+	}
+}
+
 func BenchmarkAirbornePosition(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		msg0 := "8D40621D58C382D690C8AC2863A7"

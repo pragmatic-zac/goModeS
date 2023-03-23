@@ -626,7 +626,31 @@ func AirborneVelocity(msg string) (Velocity, error) {
 	return v, nil
 }
 
+func CombinedVelocity(msg string) (Velocity, error) {
+	tc, err := internal.Typecode(msg)
+	if err != nil {
+		return Velocity{}, err
+	}
+
+	if tc >= 5 && tc <= 8 {
+		v, err := SurfaceVelocity(msg)
+		if err != nil {
+			return Velocity{}, err
+		}
+		return v, nil
+	} else if tc == 19 {
+		v, err := AirborneVelocity(msg)
+		if err != nil {
+			return Velocity{}, err
+		}
+		return v, nil
+	} else {
+		return Velocity{}, errors.New("incorrect message type, expecting 5 thru 8 or 19")
+	}
+}
+
 func OddEvenFlag(msg string) int {
 	bin, _ := internal.HexToBinary(msg)
-	return int(bin[53])
+	res, _ := strconv.Atoi(bin[53:54])
+	return res
 }

@@ -225,21 +225,21 @@ func Altitude(binString string) (int, error) {
 			B4 := string(binString[11])
 			D4 := string(binString[12])
 
-			graystr := D2 + D4 + A1 + A2 + A4 + B1 + B2 + B4 + C1 + C2 + C4
-			alt = gray2alt(graystr)
+			grayStr := D2 + D4 + A1 + A2 + A4 + B1 + B2 + B4 + C1 + C2 + C4
+			alt = grayToAlt(grayStr)
 		}
 	}
 
 	if Mbit == "1" { // unit in meter
-		vbin := binString[:6] + binString[7:]
-		vint, _ := strconv.ParseInt(vbin, 2, 64)
-		alt = int(float64(vint) * 3.28084) // convert to ft
+		vBin := binString[:6] + binString[7:]
+		vInt, _ := strconv.ParseInt(vBin, 2, 64)
+		alt = int(float64(vInt) * 3.28084) // convert to ft
 	}
 
 	return alt, nil
 }
 
-func gray2int(binString string) int {
+func grayToInt(binString string) int {
 	num, _ := strconv.ParseInt(binString, 2, 64)
 	num ^= num >> 8
 	num ^= num >> 4
@@ -248,13 +248,13 @@ func gray2int(binString string) int {
 	return int(num)
 }
 
-func gray2alt(binString string) int {
+func grayToAlt(binString string) int {
 	gc500 := binString[:8]
-	n500 := gray2int(gc500)
+	n500 := grayToInt(gc500)
 
 	// 100-ft step must be converted first
 	gc100 := binString[8:]
-	n100 := gray2int(gc100)
+	n100 := grayToInt(gc100)
 
 	if n100 == 0 || n100 == 5 || n100 == 6 {
 		return 0

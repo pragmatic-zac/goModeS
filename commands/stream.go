@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"pragmatic-zac/goModeS/streaming"
 	"sync"
 	"syscall"
 	"time"
@@ -115,8 +116,12 @@ func processMessages(ctx context.Context, msgChan <-chan string, wg *sync.WaitGr
 			println("MESSAGE PROCESSOR SHUTTING DOWN")
 			return
 		case msg := <-msgChan:
-			// process the message here
-			fmt.Println("Received message:", msg)
+			//fmt.Println("Received message:", msg)
+
+			// ignore other messages for now
+			if len(msg) == 31 {
+				streaming.DecodeAdsB(msg)
+			}
 		}
 	}
 }

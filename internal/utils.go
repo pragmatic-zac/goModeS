@@ -290,3 +290,16 @@ func contains(s *[]int, e *int) bool {
 	}
 	return false
 }
+
+func CleanMessage(dirtyMsg string) string {
+	charsToRemove := "*;"
+
+	var cleaned strings.Builder
+	for _, r := range dirtyMsg {
+		if !strings.ContainsRune(charsToRemove, r) {
+			cleaned.WriteRune(r)
+		}
+	}
+
+	return cleaned.String()
+}

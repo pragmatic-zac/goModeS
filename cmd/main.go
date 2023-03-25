@@ -1,8 +1,6 @@
 package main
 
-import (
-	"pragmatic-zac/goModeS/streaming"
-)
+import "pragmatic-zac/goModeS/commands"
 
 // 8DACD0CF990C2D3250041196585C - 19
 // 8DA41C50E11A3400000000160B30 - 28
@@ -27,9 +25,5 @@ import (
 // user needs to pass in lat/lon for reference position
 
 func main() {
-	msg := "8DA3FB6F589B909697401DC40C0C"
-
-	streaming.DecodeAdsB(msg)
-
-	println("done")
+	commands.Execute()
 }

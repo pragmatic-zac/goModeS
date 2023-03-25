@@ -1,6 +1,17 @@
 package commands
 
-import "github.com/spf13/cobra"
+import (
+	"bufio"
+	"context"
+	"fmt"
+	"github.com/spf13/cobra"
+	"net"
+	"os"
+	"os/signal"
+	"sync"
+	"syscall"
+	"time"
+)
 
 var address string
 var mode string
@@ -12,6 +23,40 @@ var connectCmd = &cobra.Command{
 		println("connect")
 		println(address)
 		println(mode)
+
+		// network stuff
+		tcpAddr, err := net.ResolveTCPAddr("tcp", "192.168.1.190:30002") // replace this with address
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		conn, err := net.DialTCP("tcp", nil, tcpAddr)
+		if err != nil {
+			fmt.Println(err.Error())
+			return
+		}
+		defer conn.Close()
+
+		// set up channels and such
+		ctx, cancel := context.WithCancel(context.Background())
+		var wg sync.WaitGroup
+
+		msgChan := make(chan string)
+
+		go handleConnection(ctx, conn, msgChan, &wg)
+		go processMessages(ctx, msgChan, &wg)
+		go renderLoop(ctx, &wg)
+
+		// Wait for SIGINT or SIGTERM to trigger a graceful shutdown
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+		<-sigChan
+		fmt.Println("Shutting down...")
+
+		cancel()
+		wg.Wait()
+
+		fmt.Println("Successfully shut down.")
 	},
 }
 
@@ -23,4 +68,73 @@ func init() {
 	connectCmd.MarkFlagRequired("mode")
 
 	rootCmd.AddCommand(connectCmd)
+}
+
+func handleConnection(ctx context.Context, conn net.Conn, msgChan chan<- string, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
+	readChan := make(chan string)
+	errChan := make(chan error)
+
+	// start a goroutine to read data from the connection
+	// bufio blocks if we don't do this, and we never get graceful shutdown
+	go func() {
+		for {
+			msg, err := bufio.NewReader(conn).ReadString('\n')
+			if err != nil {
+				errChan <- err
+				return
+			}
+			readChan <- msg
+		}
+	}()
+
+	for {
+		select {
+		case <-ctx.Done():
+			println("TCP SHUTTING DOWN")
+			close(msgChan)
+			return
+		case msg := <-readChan:
+			msgChan <- msg
+		case err := <-errChan:
+			fmt.Println("Error reading message:", err)
+			return
+		}
+	}
+}
+
+func processMessages(ctx context.Context, msgChan <-chan string, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
+	for {
+		select {
+		case <-ctx.Done():
+			println("MESSAGE PROCESSOR SHUTTING DOWN")
+			return
+		case msg := <-msgChan:
+			// process the message here
+			fmt.Println("Received message:", msg)
+		}
+	}
+}
+
+func renderLoop(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
+	for {
+		select {
+		case <-ctx.Done():
+			println("RENDER LOOP SHUTTING DOWN")
+			return
+		default:
+			println("-- render --")
+
+			// do this once a second
+			time.Sleep(1 * time.Second)
+		}
+	}
 }

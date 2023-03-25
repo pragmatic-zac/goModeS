@@ -8,11 +8,14 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	models "pragmatic-zac/goModeS/models"
 	"pragmatic-zac/goModeS/streaming"
 	"sync"
 	"syscall"
 	"time"
 )
+
+// probably move these so that other stuff can use them
 
 var address string
 var mode string
@@ -24,6 +27,9 @@ var connectCmd = &cobra.Command{
 		println("connect")
 		println(address)
 		println(mode)
+
+		// some parent level state
+		trackedFlights := make(map[string]models.Flight)
 
 		// network stuff
 		tcpAddr, err := net.ResolveTCPAddr("tcp", "192.168.1.190:30002") // replace this with address
@@ -45,8 +51,8 @@ var connectCmd = &cobra.Command{
 		msgChan := make(chan string)
 
 		go handleConnection(ctx, conn, msgChan, &wg)
-		go processMessages(ctx, msgChan, &wg)
-		go renderLoop(ctx, &wg)
+		go processMessages(ctx, msgChan, &wg, trackedFlights)
+		go renderLoop(ctx, &wg, trackedFlights)
 
 		// Wait for SIGINT or SIGTERM to trigger a graceful shutdown
 		sigChan := make(chan os.Signal, 1)
@@ -106,7 +112,7 @@ func handleConnection(ctx context.Context, conn net.Conn, msgChan chan<- string,
 	}
 }
 
-func processMessages(ctx context.Context, msgChan <-chan string, wg *sync.WaitGroup) {
+func processMessages(ctx context.Context, msgChan <-chan string, wg *sync.WaitGroup, flightsState map[string]models.Flight) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -120,13 +126,13 @@ func processMessages(ctx context.Context, msgChan <-chan string, wg *sync.WaitGr
 
 			// ignore other messages for now
 			if len(msg) == 31 {
-				streaming.DecodeAdsB(msg)
+				streaming.DecodeAdsB(msg, flightsState)
 			}
 		}
 	}
 }
 
-func renderLoop(ctx context.Context, wg *sync.WaitGroup) {
+func renderLoop(ctx context.Context, wg *sync.WaitGroup, flightsState map[string]models.Flight) {
 	wg.Add(1)
 	defer wg.Done()
 
@@ -136,7 +142,10 @@ func renderLoop(ctx context.Context, wg *sync.WaitGroup) {
 			println("RENDER LOOP SHUTTING DOWN")
 			return
 		default:
-			println("-- render --")
+			// println("-- render --")
+			fmt.Printf("Planes in cache: %d\n", len(flightsState))
+
+			// TODO: render the table
 
 			// do this once a second
 			time.Sleep(1 * time.Second)

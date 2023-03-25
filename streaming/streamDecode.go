@@ -4,20 +4,29 @@ import (
 	"fmt"
 	"pragmatic-zac/goModeS/decode"
 	"pragmatic-zac/goModeS/internal"
+	models "pragmatic-zac/goModeS/models"
 )
 
-// TODO: also going to need a pointer to a data structure that stores flights
-func DecodeAdsB(msg string) {
+// TODO: does this need its own state to keep other recent messages? for example, previous lat/long pairs
+func DecodeAdsB(msg string, flightsState map[string]models.Flight) {
 	cleanedMsg := internal.CleanMessage(msg)
 
 	icao, _ := decode.Icao(cleanedMsg)
 	println(icao)
+	flightsState[icao] = models.Flight{Icao: icao, Altitude: "fixme"}
+
+	// place this into flights for testing
+	for _, flight := range flightsState {
+		if flight.Icao == icao {
+			println("this is already in state")
+		}
+	}
 
 	tc, _ := decode.Typecode(cleanedMsg)
 
 	println("message typecode: ", tc)
 
-	// set the time, will need to do this on the time that each msg is received
+	// TODO: set the time, will need to do this on the time that each msg is received
 	// timestamp := time.Now()
 	// println("current time is ", timestamp.)
 
@@ -57,8 +66,7 @@ func DecodeAdsB(msg string) {
 			alt, _ := decode.Altitude(cleanedMsg)
 			fmt.Printf("altitude: %d\n", alt)
 		}
-
-		vel, _ := decode.SurfaceVelocity(cleanedMsg)
-		fmt.Printf("Surface velocity: %f\n", vel.Speed)
 	}
+
+	// TODO: add all this data to the flight map
 }

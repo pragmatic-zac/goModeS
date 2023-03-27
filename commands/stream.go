@@ -122,8 +122,6 @@ func processMessages(ctx context.Context, msgChan <-chan string, wg *sync.WaitGr
 			println("MESSAGE PROCESSOR SHUTTING DOWN")
 			return
 		case msg := <-msgChan:
-			//fmt.Println("Received message:", msg)
-
 			// ignore other messages for now
 			if len(msg) == 31 {
 				streaming.DecodeAdsB(msg, flightsState)

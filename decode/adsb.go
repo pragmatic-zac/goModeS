@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// TODO: move these to models
 type Position struct {
 	Latitude  float64
 	Longitude float64

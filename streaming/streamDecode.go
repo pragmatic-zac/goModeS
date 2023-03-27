@@ -1,45 +1,32 @@
 package streaming
 
 import (
-	"fmt"
 	"pragmatic-zac/goModeS/decode"
 	"pragmatic-zac/goModeS/internal"
 	models "pragmatic-zac/goModeS/models"
+	"time"
 )
 
-// TODO: does this need its own state to keep other recent messages? for example, previous lat/long pairs
 func DecodeAdsB(msg string, flightsState map[string]models.Flight) {
 	cleanedMsg := internal.CleanMessage(msg)
 
 	icao, _ := decode.Icao(cleanedMsg)
-	println(icao)
-	flightsState[icao] = models.Flight{Icao: icao, Altitude: "fixme"}
-
-	// place this into flights for testing
-	for _, flight := range flightsState {
-		if flight.Icao == icao {
-			println("this is already in state")
-		}
-	}
-
 	tc, _ := decode.Typecode(cleanedMsg)
+	timestamp := time.Now()
 
-	println("message typecode: ", tc)
-
-	// TODO: set the time, will need to do this on the time that each msg is received
-	// timestamp := time.Now()
-	// println("current time is ", timestamp.)
+	f := flightsState[icao]
+	f.LastSeen = timestamp
 
 	if tc >= 1 && tc <= 4 {
 		// identification
 		ident, _ := decode.Callsign(cleanedMsg)
-		println(ident)
+		f.Callsign = ident
 	}
 
 	if tc >= 5 && tc <= 8 || tc == 19 {
 		// velocity (either type)
 		vel, _ := decode.CombinedVelocity(cleanedMsg)
-		println(int(vel.Speed))
+		f.Velocity = vel
 	}
 
 	if tc >= 5 && tc <= 18 {
@@ -51,22 +38,32 @@ func DecodeAdsB(msg string, flightsState map[string]models.Flight) {
 		if tc >= 5 && tc <= 8 {
 			// surface position
 			pos, _ := decode.SurfacePositionWithRef(cleanedMsg, 36.04863, -86.95218)
-			fmt.Printf("Lat: %f", pos.Latitude)
-			fmt.Printf("Lon: %f", pos.Longitude)
+			f.Position = pos
 
 			alt, _ := decode.Altitude(cleanedMsg)
-			fmt.Printf("altitude: %d\n", alt)
+			f.Altitude = alt
 		} else {
 			// airborne position
 			pos, _ := decode.AirbornePositionWithRef(cleanedMsg, 36.04863, -86.95218)
-			fmt.Printf("Lat: %f\n", pos.Latitude)
-			fmt.Printf("Lon: %f\n", pos.Longitude)
+			f.Position = pos
 
-			// not sure if belongs here
 			alt, _ := decode.Altitude(cleanedMsg)
-			fmt.Printf("altitude: %d\n", alt)
+			f.Altitude = alt
 		}
 	}
 
-	// TODO: add all this data to the flight map
+	// update the flight in the cache
+	flightsState[icao] = f
+
+	expireCache(flightsState, timestamp)
+
+}
+
+func expireCache(flightsState map[string]models.Flight, t time.Time) {
+	for _, flight := range flightsState {
+		diff := t.Sub(flight.LastSeen)
+		if diff > 60*time.Second {
+			delete(flightsState, flight.Icao)
+		}
+	}
 }

@@ -58,7 +58,6 @@ var connectCmd = &cobra.Command{
 		sigChan := make(chan os.Signal, 1)
 		signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 		<-sigChan
-		fmt.Println("Shutting down...")
 
 		cancel()
 		wg.Wait()
@@ -70,9 +69,13 @@ var connectCmd = &cobra.Command{
 func init() {
 	connectCmd.Flags().StringVarP(&address, "address", "a", "", "address to connect to (include port)")
 	connectCmd.Flags().StringVarP(&mode, "mode", "m", "", "mode of source (currently only raw supported)")
+	connectCmd.Flags().StringVarP(&mode, "latitude", "lat", "", "receiver latitude")
+	connectCmd.Flags().StringVarP(&mode, "longitude", "lon", "", "receiver longitude")
 
 	connectCmd.MarkFlagRequired("address")
 	connectCmd.MarkFlagRequired("mode")
+	connectCmd.MarkFlagRequired("latitude")
+	connectCmd.MarkFlagRequired("longitude")
 
 	rootCmd.AddCommand(connectCmd)
 }
@@ -100,7 +103,6 @@ func handleConnection(ctx context.Context, conn net.Conn, msgChan chan<- string,
 	for {
 		select {
 		case <-ctx.Done():
-			println("TCP SHUTTING DOWN")
 			close(msgChan)
 			return
 		case msg := <-readChan:
@@ -119,7 +121,6 @@ func processMessages(ctx context.Context, msgChan <-chan string, wg *sync.WaitGr
 	for {
 		select {
 		case <-ctx.Done():
-			println("MESSAGE PROCESSOR SHUTTING DOWN")
 			return
 		case msg := <-msgChan:
 			// ignore other messages for now
@@ -137,13 +138,12 @@ func renderLoop(ctx context.Context, wg *sync.WaitGroup, flightsState map[string
 	for {
 		select {
 		case <-ctx.Done():
-			println("RENDER LOOP SHUTTING DOWN")
 			return
 		default:
-			// println("-- render --")
-			fmt.Printf("Planes in cache: %d\n", len(flightsState))
-
 			// TODO: render the table
+			for _, f := range flightsState {
+				fmt.Printf("ICAO: %s, Call: %s, Alt: %d \n", f.Icao, f.Callsign, f.Altitude)
+			}
 
 			// do this once a second
 			time.Sleep(1 * time.Second)

@@ -15,6 +15,7 @@ func DecodeAdsB(msg string, flightsState map[string]models.Flight) {
 	timestamp := time.Now()
 
 	f := flightsState[icao]
+	f.Icao = icao
 	f.LastSeen = timestamp
 
 	if tc >= 1 && tc <= 4 {
@@ -31,24 +32,34 @@ func DecodeAdsB(msg string, flightsState map[string]models.Flight) {
 
 	if tc >= 5 && tc <= 18 {
 		oddEven := decode.OddEvenFlag(cleanedMsg)
-		println("odd or even -> ", oddEven)
+		if oddEven == 0 {
+			f.EvenMessage = cleanedMsg
+			f.EvenMessageTime = timestamp
+		} else {
+			f.OddMessage = cleanedMsg
+			f.OddMessageTime = timestamp
+		}
 
-		// for now use position with ref, but will need a way to determine position with ref or position with odd/even message pair
+		// for now use position with ref, later on add support for position with odd/even message pair
 
 		if tc >= 5 && tc <= 8 {
 			// surface position
-			pos, _ := decode.SurfacePositionWithRef(cleanedMsg, 36.04863, -86.95218)
+			pos, _ := decode.SurfacePositionWithRef(cleanedMsg, 36.04863, -86.95218) // TODO: remove this ref position
 			f.Position = pos
 
 			alt, _ := decode.Altitude(cleanedMsg)
-			f.Altitude = alt
+			if alt != 0 {
+				f.Altitude = alt
+			}
 		} else {
 			// airborne position
 			pos, _ := decode.AirbornePositionWithRef(cleanedMsg, 36.04863, -86.95218)
 			f.Position = pos
 
 			alt, _ := decode.Altitude(cleanedMsg)
-			f.Altitude = alt
+			if alt != 0 {
+				f.Altitude = alt
+			}
 		}
 	}
 

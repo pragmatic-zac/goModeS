@@ -71,13 +71,13 @@ var connectCmd = &cobra.Command{
 func init() {
 	connectCmd.Flags().StringVarP(&address, "address", "a", "", "address to connect to (include port)")
 	connectCmd.Flags().StringVarP(&mode, "mode", "m", "", "mode of source (currently only raw supported)")
-	connectCmd.Flags().StringVarP(&mode, "lat", "l", "", "receiver latitude")
-	connectCmd.Flags().StringVarP(&mode, "lon", "o", "", "receiver longitude")
+	connectCmd.Flags().Float64VarP(&latRef, "lat", "l", 0, "receiver latitude")
+	connectCmd.Flags().Float64VarP(&lonRef, "lon", "o", 0, "receiver longitude")
 
 	connectCmd.MarkFlagRequired("address")
 	connectCmd.MarkFlagRequired("mode")
-	connectCmd.MarkFlagRequired("latitude")
-	connectCmd.MarkFlagRequired("longitude")
+	connectCmd.MarkFlagRequired("lat")
+	connectCmd.MarkFlagRequired("lon")
 
 	rootCmd.AddCommand(connectCmd)
 }

@@ -16,8 +16,6 @@ import (
 	"time"
 )
 
-// probably move these so that other stuff can use them
-
 var address string
 var mode string
 var latRef float64

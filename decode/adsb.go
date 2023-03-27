@@ -9,26 +9,27 @@ import (
 	"time"
 )
 
+// TODO: move these to models
 type Position struct {
-	latitude  float64
-	longitude float64
+	Latitude  float64
+	Longitude float64
 }
 
 type Velocity struct {
-	speed      float64
-	angle      float64
-	vertRate   int32
-	speedType  string
-	rateSource string
+	Speed      float64
+	Angle      float64
+	VertRate   int32
+	SpeedType  string
+	RateSource string
 }
 
 type PositionInput struct {
-	msg0   string
-	msg1   string
-	t0     time.Time
-	t1     time.Time
-	latRef *float64
-	lonRef *float64
+	Msg0   string
+	Msg1   string
+	T0     time.Time
+	T1     time.Time
+	LatRef *float64
+	LonRef *float64
 }
 
 func Df(msg string) (int, error) {
@@ -101,11 +102,11 @@ func Callsign(msg string) (string, error) {
 }
 
 func AirbornePosition(input PositionInput) (Position, error) {
-	bin0, err := internal.HexToBinary(input.msg0)
+	bin0, err := internal.HexToBinary(input.Msg0)
 	if err != nil {
 		return Position{}, err
 	}
-	bin1, err := internal.HexToBinary(input.msg1)
+	bin1, err := internal.HexToBinary(input.Msg1)
 	if err != nil {
 		return Position{}, err
 	}
@@ -119,8 +120,8 @@ func AirbornePosition(input PositionInput) (Position, error) {
 	if oddEven0 == 0 && oddEven1 == 1 {
 
 	} else if oddEven0 == 1 && oddEven1 == 0 {
-		input.msg0, input.msg1 = input.msg1, input.msg0
-		input.t0, input.t1 = input.t1, input.t0
+		input.Msg0, input.Msg1 = input.Msg1, input.Msg0
+		input.T0, input.T1 = input.T1, input.T0
 	} else {
 		return Position{}, errors.New("both an even + odd message are required")
 	}
@@ -174,7 +175,7 @@ func AirbornePosition(input PositionInput) (Position, error) {
 	var lat float64
 	var lon float64
 
-	if input.t0.After(input.t1) {
+	if input.T0.After(input.T1) {
 		lat = latEven
 
 		var nl = internal.CprNL(lat)
@@ -201,19 +202,72 @@ func AirbornePosition(input PositionInput) (Position, error) {
 	}
 
 	pos := Position{
-		latitude:  internal.RoundFloat(lat, 5),
-		longitude: internal.RoundFloat(lon, 5),
+		Latitude:  internal.RoundFloat(lat, 5),
+		Longitude: internal.RoundFloat(lon, 5),
 	}
 
 	return pos, nil
 }
 
-func SurfacePosition(input PositionInput) (Position, error) {
-	bin0, err := internal.HexToBinary(input.msg0)
+func AirbornePositionWithRef(msg string, latRef float64, lonRef float64) (Position, error) {
+	msgBin, err := internal.HexToBinary(msg)
 	if err != nil {
 		return Position{}, err
 	}
-	bin1, err := internal.HexToBinary(input.msg1)
+
+	bin := msgBin[32:]
+
+	cprLatInt, err := strconv.ParseInt(bin[22:39], 2, 64)
+	if err != nil {
+		return Position{}, err
+	}
+	cprLat := float64(cprLatInt) / 131072
+
+	cprLonInt, err := strconv.ParseInt(bin[39:56], 2, 64)
+	if err != nil {
+		return Position{}, err
+	}
+	cprLon := float64(cprLonInt) / 131072
+
+	i, _ := strconv.Atoi(bin[21:22])
+	var dLat float64
+	if i != 0 {
+		dLat = 90.0 / 59.0
+	} else {
+		dLat = 90.0 / 60.0
+	}
+
+	j := math.Floor(latRef/dLat) + math.Floor(0.5+((math.Mod(latRef, dLat)/dLat)-cprLat))
+
+	lat := dLat * (j + cprLat)
+
+	ni := internal.CprNL(lat) - float64(i)
+
+	var dLon float64
+	if ni > 0 {
+		dLon = 90.0 / ni
+	} else {
+		dLon = 90.0
+	}
+
+	m := math.Floor(lonRef/dLon) + math.Floor(0.5+((math.Mod(lonRef, dLon)/dLon)-cprLon))
+
+	lon := dLon * (m + cprLon)
+
+	p := Position{
+		Latitude:  internal.RoundFloat(lat, 6),
+		Longitude: internal.RoundFloat(lon, 6),
+	}
+
+	return p, nil
+}
+
+func SurfacePosition(input PositionInput) (Position, error) {
+	bin0, err := internal.HexToBinary(input.Msg0)
+	if err != nil {
+		return Position{}, err
+	}
+	bin1, err := internal.HexToBinary(input.Msg1)
 	if err != nil {
 		return Position{}, err
 	}
@@ -257,7 +311,7 @@ func SurfacePosition(input PositionInput) (Position, error) {
 
 	var latE float64
 	var latO float64
-	if *input.latRef > 0 {
+	if *input.LatRef > 0 {
 		latE = latEvenN
 		latO = latOddN
 	} else {
@@ -272,7 +326,7 @@ func SurfacePosition(input PositionInput) (Position, error) {
 
 	var lat float64
 	var lon float64
-	if input.t0.After(input.t1) {
+	if input.T0.After(input.T1) {
 		lat = latE
 		nl := internal.CprNL(latE)
 		ni := math.Max(nl, 1)
@@ -297,37 +351,37 @@ func SurfacePosition(input PositionInput) (Position, error) {
 	// we want the one closest to the receiver
 	var closest float64
 	for _, f := range lons {
-		abs := math.Abs(*input.lonRef - f)
+		abs := math.Abs(*input.LonRef - f)
 		if abs < closest {
 			closest = f
 		}
 	}
 
 	pos := Position{
-		latitude:  internal.RoundFloat(lat, 5),
-		longitude: internal.RoundFloat(lon, 5),
+		Latitude:  internal.RoundFloat(lat, 5),
+		Longitude: internal.RoundFloat(lon, 5),
 	}
 
 	return pos, nil
 }
 
-func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (float64, float64, error) {
+func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (Position, error) {
 	msgBin, err := internal.HexToBinary(msg)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 
 	bin := msgBin[32:]
 
 	cprLatInt, err := strconv.ParseInt(bin[22:39], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	cprLat := float64(cprLatInt) / 131072
 
 	cprLonInt, err := strconv.ParseInt(bin[39:56], 2, 64)
 	if err != nil {
-		return 0, 0, err
+		return Position{}, err
 	}
 	cprLon := float64(cprLonInt) / 131072
 
@@ -356,7 +410,12 @@ func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (float64
 
 	lon := dLon * (m + cprLon)
 
-	return internal.RoundFloat(lat, 6), internal.RoundFloat(lon, 6), nil
+	p := Position{
+		Latitude:  internal.RoundFloat(lat, 6),
+		Longitude: internal.RoundFloat(lon, 6),
+	}
+
+	return p, nil
 }
 
 func SurfaceVelocity(msg string) (Velocity, error) {
@@ -422,11 +481,11 @@ func SurfaceVelocity(msg string) (Velocity, error) {
 	}
 
 	v := Velocity{
-		speed:      spd,
-		angle:      trk,
-		vertRate:   0,
-		speedType:  "GS",
-		rateSource: "",
+		Speed:      spd,
+		Angle:      trk,
+		VertRate:   0,
+		SpeedType:  "GS",
+		RateSource: "",
 	}
 	return v, nil
 }
@@ -558,12 +617,77 @@ func AirborneVelocity(msg string) (Velocity, error) {
 	}
 
 	v := Velocity{
-		speed:      float64(spd),
-		angle:      trk,
-		vertRate:   vs,
-		speedType:  spdType,
-		rateSource: vrSource,
+		Speed:      float64(spd),
+		Angle:      trk,
+		VertRate:   vs,
+		SpeedType:  spdType,
+		RateSource: vrSource,
 	}
 
 	return v, nil
+}
+
+func CombinedVelocity(msg string) (Velocity, error) {
+	tc, err := internal.Typecode(msg)
+	if err != nil {
+		return Velocity{}, err
+	}
+
+	if tc >= 5 && tc <= 8 {
+		v, err := SurfaceVelocity(msg)
+		if err != nil {
+			return Velocity{}, err
+		}
+		return v, nil
+	} else if tc == 19 {
+		v, err := AirborneVelocity(msg)
+		if err != nil {
+			return Velocity{}, err
+		}
+		return v, nil
+	} else {
+		return Velocity{}, errors.New("incorrect message type, expecting 5 thru 8 or 19")
+	}
+}
+
+func Altitude(msg string) (int, error) {
+	tc, err := internal.Typecode(msg)
+	if err != nil {
+		return 0, err
+	}
+
+	// check for surface position and return 0
+
+	if tc < 9 || tc == 19 || tc > 22 {
+		return 0, errors.New("cannot decode altitude, not an airborne position message")
+	}
+
+	bin, err := internal.HexToBinary(msg)
+	if err != nil {
+		return 0, err
+	}
+
+	msgBin := bin[32:]
+
+	var alt int
+
+	altBin := msgBin[8:20]
+	if tc < 19 {
+		altCode := altBin[0:6] + "0" + altBin[6:]
+		alt, err = internal.Altitude(altCode)
+		if err != nil {
+			return 0, err
+		}
+	} else {
+		n, _ := strconv.ParseInt(altBin, 2, 64)
+		alt = int(float64(n) * 3.28084)
+	}
+
+	return alt, nil
+}
+
+func OddEvenFlag(msg string) int {
+	bin, _ := internal.HexToBinary(msg)
+	res, _ := strconv.Atoi(bin[53:54])
+	return res
 }

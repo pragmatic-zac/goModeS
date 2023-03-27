@@ -36,12 +36,12 @@ func TestAirbornePosition(t *testing.T) {
 	t1 := time.Unix(int64(1457996400), 0)
 
 	input := PositionInput{
-		msg0:   msg0,
-		msg1:   msg1,
-		t0:     t0,
-		t1:     t1,
-		latRef: nil,
-		lonRef: nil,
+		Msg0:   msg0,
+		Msg1:   msg1,
+		T0:     t0,
+		T1:     t1,
+		LatRef: nil,
+		LonRef: nil,
 	}
 
 	pos, _ := AirbornePosition(input)
@@ -49,12 +49,12 @@ func TestAirbornePosition(t *testing.T) {
 	wantedLat := 52.2572
 	wantedLon := 3.91937
 
-	if pos.latitude != wantedLat {
-		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, pos.latitude)
+	if pos.Latitude != wantedLat {
+		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, pos.Latitude)
 	}
 
-	if pos.longitude != wantedLon {
-		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, pos.longitude)
+	if pos.Longitude != wantedLon {
+		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, pos.Longitude)
 	}
 }
 
@@ -67,12 +67,12 @@ func TestSurfacePosition(t *testing.T) {
 	lonRef := 4.375
 
 	input := PositionInput{
-		msg0:   msg0,
-		msg1:   msg1,
-		t0:     t0,
-		t1:     t1,
-		latRef: &latRef,
-		lonRef: &lonRef,
+		Msg0:   msg0,
+		Msg1:   msg1,
+		T0:     t0,
+		T1:     t1,
+		LatRef: &latRef,
+		LonRef: &lonRef,
 	}
 
 	pos, _ := SurfacePosition(input)
@@ -80,12 +80,12 @@ func TestSurfacePosition(t *testing.T) {
 	wantedLat := 52.32061
 	wantedLon := 4.73473
 
-	if pos.latitude != wantedLat {
-		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, pos.latitude)
+	if pos.Latitude != wantedLat {
+		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, pos.Latitude)
 	}
 
-	if pos.longitude != wantedLon {
-		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, pos.longitude)
+	if pos.Longitude != wantedLon {
+		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, pos.Longitude)
 	}
 }
 
@@ -94,17 +94,17 @@ func TestSurfacePositionWithRef(t *testing.T) {
 	latRef := 51.990
 	lonRef := 4.375
 
-	actualLat, actualLon, _ := SurfacePositionWithRef(msg0, latRef, lonRef)
+	pos, _ := SurfacePositionWithRef(msg0, latRef, lonRef)
 
 	wantedLat := 52.320561
 	wantedLon := 4.735735
 
-	if actualLat != wantedLat {
-		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, actualLat)
+	if pos.Latitude != wantedLat {
+		t.Fatalf("Latitude incorrect, wanted %v got %v", wantedLat, pos.Latitude)
 	}
 
-	if actualLon != wantedLon {
-		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, actualLon)
+	if pos.Longitude != wantedLon {
+		t.Fatalf("Longitude incorrect, wanted %v got %v", wantedLon, pos.Longitude)
 	}
 }
 
@@ -118,20 +118,33 @@ func TestSurfaceVelocity(t *testing.T) {
 	wantedVertRate := 0
 	wantedSpdType := "GS"
 
-	if v.speed != wantedSpd {
-		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, v.speed)
+	if v.Speed != wantedSpd {
+		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, v.Speed)
 	}
 
-	if v.angle != wantedTrk {
-		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, v.angle)
+	if v.Angle != wantedTrk {
+		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, v.Angle)
 	}
 
-	if v.vertRate != int32(wantedVertRate) {
-		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, v.vertRate)
+	//for iByte := 0; iByte < len(mBytes)-3; iByte++ {
+	//	for ibit := 0; ibit < 8; ibit++ {
+	//		mask := 0x80 >> int(ibit)
+	//		bits := mBytes[iByte] & mask
+	//
+	//		if bits > 0 {
+	//			mBytes[iByte] = mBytes[iByte] ^ (G[0] >> ibit)
+	//			mBytes[iByte+1] = mBytes[iByte+1] ^ (0xFF & ((G[0]<<8 - ibit) | (G[1] >> ibit)))
+	//			mBytes[iByte+2] = mBytes[iByte+2] ^ (0xFF & ((G[1]<<8 - ibit) | (G[2] >> ibit)))
+	//			mBytes[iByte+3] = mBytes[iByte+3] ^ (0xFF & ((G[2]<<8 - ibit) | (G[3] >> ibit)))
+	//		}
+	//	}
+	//}
+	if v.VertRate != int32(wantedVertRate) {
+		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, v.VertRate)
 	}
 
-	if v.speedType != wantedSpdType {
-		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, v.speedType)
+	if v.SpeedType != wantedSpdType {
+		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, v.SpeedType)
 	}
 }
 
@@ -145,20 +158,20 @@ func TestAirborneVelocityGS(t *testing.T) {
 	wantedVertRate := int64(-832)
 	wantedSpdType := "GS"
 
-	if v.speed != wantedSpd {
-		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, v.speed)
+	if v.Speed != wantedSpd {
+		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, v.Speed)
 	}
 
-	if v.angle != wantedTrk {
-		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, v.angle)
+	if v.Angle != wantedTrk {
+		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, v.Angle)
 	}
 
-	if v.vertRate != int32(wantedVertRate) {
-		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, v.vertRate)
+	if v.VertRate != int32(wantedVertRate) {
+		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, v.VertRate)
 	}
 
-	if v.speedType != wantedSpdType {
-		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, v.speedType)
+	if v.SpeedType != wantedSpdType {
+		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, v.SpeedType)
 	}
 }
 
@@ -172,20 +185,32 @@ func TestAirborneVelocityTAS(t *testing.T) {
 	wantedVertRate := int64(-2304)
 	wantedSpdType := "TAS"
 
-	if v.speed != wantedSpd {
-		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, v.speed)
+	if v.Speed != wantedSpd {
+		t.Fatalf("Speed incorrect, wanted %v got %v", wantedSpd, v.Speed)
 	}
 
-	if v.angle != wantedTrk {
-		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, v.angle)
+	if v.Angle != wantedTrk {
+		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, v.Angle)
 	}
 
-	if v.vertRate != int32(wantedVertRate) {
-		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, v.vertRate)
+	if v.VertRate != int32(wantedVertRate) {
+		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, v.VertRate)
 	}
 
-	if v.speedType != wantedSpdType {
-		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, v.speedType)
+	if v.SpeedType != wantedSpdType {
+		t.Fatalf("Speed type incorrect, wanted %v got %v", wantedSpdType, v.SpeedType)
+	}
+}
+
+func TestAltitude(t *testing.T) {
+	msg := "8D40058B58C901375147EFD09357"
+
+	wantedAltitude := 39000
+
+	alt, _ := Altitude(msg)
+
+	if alt != wantedAltitude {
+		t.Fatalf("Altitude incorrect, wanted %v got %v", wantedAltitude, alt)
 	}
 }
 
@@ -197,12 +222,12 @@ func BenchmarkAirbornePosition(b *testing.B) {
 		t1 := time.Unix(int64(1457996400), 0)
 
 		input := PositionInput{
-			msg0:   msg0,
-			msg1:   msg1,
-			t0:     t0,
-			t1:     t1,
-			latRef: nil,
-			lonRef: nil,
+			Msg0:   msg0,
+			Msg1:   msg1,
+			T0:     t0,
+			T1:     t1,
+			LatRef: nil,
+			LonRef: nil,
 		}
 
 		AirbornePosition(input)
@@ -219,12 +244,12 @@ func BenchmarkSurfacePosition(b *testing.B) {
 		lonRef := 4.375
 
 		input := PositionInput{
-			msg0:   msg0,
-			msg1:   msg1,
-			t0:     t0,
-			t1:     t1,
-			latRef: &latRef,
-			lonRef: &lonRef,
+			Msg0:   msg0,
+			Msg1:   msg1,
+			T0:     t0,
+			T1:     t1,
+			LatRef: &latRef,
+			LonRef: &lonRef,
 		}
 
 		SurfacePosition(input)

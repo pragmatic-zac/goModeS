@@ -19,20 +19,21 @@ import (
 
 var address string
 var mode string
+var latRef float64
+var lonRef float64
 var connectCmd = &cobra.Command{
 	Use:   "connect",
 	Short: "Display table of aircraft tracked by receiver running on provided port",
 	Long:  `Connects to a receiver running on a provided port. Decodes messages and displays tracked aircraft in a table.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		println("connect")
-		println(address)
-		println(mode)
+		if mode != "raw" {
+			println("only raw format is currently supported!")
+		}
 
-		// some parent level state
 		trackedFlights := make(map[string]models.Flight)
 
 		// network stuff
-		tcpAddr, err := net.ResolveTCPAddr("tcp", "192.168.1.190:30002") // replace this with address
+		tcpAddr, err := net.ResolveTCPAddr("tcp", address)
 		if err != nil {
 			fmt.Println(err.Error())
 			return
@@ -69,8 +70,8 @@ var connectCmd = &cobra.Command{
 func init() {
 	connectCmd.Flags().StringVarP(&address, "address", "a", "", "address to connect to (include port)")
 	connectCmd.Flags().StringVarP(&mode, "mode", "m", "", "mode of source (currently only raw supported)")
-	connectCmd.Flags().StringVarP(&mode, "latitude", "lat", "", "receiver latitude")
-	connectCmd.Flags().StringVarP(&mode, "longitude", "lon", "", "receiver longitude")
+	connectCmd.Flags().StringVarP(&mode, "lat", "l", "", "receiver latitude")
+	connectCmd.Flags().StringVarP(&mode, "lon", "o", "", "receiver longitude")
 
 	connectCmd.MarkFlagRequired("address")
 	connectCmd.MarkFlagRequired("mode")
@@ -125,7 +126,7 @@ func processMessages(ctx context.Context, msgChan <-chan string, wg *sync.WaitGr
 		case msg := <-msgChan:
 			// ignore other messages for now
 			if len(msg) == 31 {
-				streaming.DecodeAdsB(msg, flightsState)
+				streaming.DecodeAdsB(msg, flightsState, latRef, lonRef)
 			}
 		}
 	}

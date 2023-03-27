@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func DecodeAdsB(msg string, flightsState map[string]models.Flight) {
+func DecodeAdsB(msg string, flightsState map[string]models.Flight, latRef float64, lonRef float64) {
 	cleanedMsg := internal.CleanMessage(msg)
 
 	icao, _ := decode.Icao(cleanedMsg)
@@ -44,7 +44,7 @@ func DecodeAdsB(msg string, flightsState map[string]models.Flight) {
 
 		if tc >= 5 && tc <= 8 {
 			// surface position
-			pos, _ := decode.SurfacePositionWithRef(cleanedMsg, 36.04863, -86.95218) // TODO: remove this ref position
+			pos, _ := decode.SurfacePositionWithRef(cleanedMsg, latRef, lonRef)
 			f.Position = pos
 
 			alt, _ := decode.Altitude(cleanedMsg)
@@ -53,7 +53,7 @@ func DecodeAdsB(msg string, flightsState map[string]models.Flight) {
 			}
 		} else {
 			// airborne position
-			pos, _ := decode.AirbornePositionWithRef(cleanedMsg, 36.04863, -86.95218)
+			pos, _ := decode.AirbornePositionWithRef(cleanedMsg, latRef, lonRef)
 			f.Position = pos
 
 			alt, _ := decode.Altitude(cleanedMsg)

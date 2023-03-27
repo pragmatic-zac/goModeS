@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	tm "github.com/buger/goterm"
 	"github.com/spf13/cobra"
 	"net"
 	"os"
@@ -136,15 +137,26 @@ func renderLoop(ctx context.Context, wg *sync.WaitGroup, flightsState map[string
 	wg.Add(1)
 	defer wg.Done()
 
+	tm.Clear()
+
 	for {
 		select {
 		case <-ctx.Done():
+			tm.Clear()
 			return
 		default:
-			// TODO: render the table
+			tm.MoveCursor(1, 1)
+
+			tbl := tm.NewTable(0, 10, 5, ' ', 0)
+			fmt.Fprintf(tbl, "ICAO\t Callsign \t Altitude \t Speed \tHeading \t VertRate \t Lat \t Lon \n")
+
 			for _, f := range flightsState {
-				fmt.Printf("ICAO: %s, Call: %s, Alt: %d \n", f.Icao, f.Callsign, f.Altitude)
+				fmt.Fprintf(tbl, "%s \t %s \t %d \t %f \t %f \t %d \t %f \t %f \n", f.Icao, f.Callsign, f.Altitude, f.Velocity.Speed, f.Velocity.Angle, f.Velocity.VertRate, f.Position.Latitude, f.Position.Longitude)
 			}
+
+			tm.Println(tbl)
+
+			tm.Flush()
 
 			// do this once a second
 			time.Sleep(1 * time.Second)

@@ -1,7 +1,7 @@
 package models
 
 import (
-	"pragmatic-zac/goModeS/decode"
+	"github.com/pragmatic-zac/goModeS/decode"
 	"time"
 )
 

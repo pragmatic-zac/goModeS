@@ -2,8 +2,8 @@ package decode
 
 import (
 	"errors"
+	"github.com/pragmatic-zac/goModeS/internal"
 	"math"
-	"pragmatic-zac/goModeS/internal"
 	"strconv"
 	"strings"
 	"time"

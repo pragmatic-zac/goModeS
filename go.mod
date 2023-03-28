@@ -1,4 +1,4 @@
-module pragmatic-zac/goModeS
+module github.com/pragmatic-zac/goModeS
 
 go 1.19
 

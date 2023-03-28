@@ -1,9 +1,9 @@
 package streaming
 
 import (
-	"pragmatic-zac/goModeS/decode"
-	"pragmatic-zac/goModeS/internal"
-	models "pragmatic-zac/goModeS/models"
+	"github.com/pragmatic-zac/goModeS/decode"
+	"github.com/pragmatic-zac/goModeS/internal"
+	models "github.com/pragmatic-zac/goModeS/models"
 	"time"
 )
 

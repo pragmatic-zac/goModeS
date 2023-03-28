@@ -1,6 +1,6 @@
 package main
 
-import "pragmatic-zac/goModeS/commands"
+import "github.com/pragmatic-zac/goModeS/commands"
 
 func main() {
 	commands.Execute()

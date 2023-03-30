@@ -1,6 +1,8 @@
-package internal
+package decode
 
-import "testing"
+import (
+	"testing"
+)
 
 var binTests = []struct {
 	msg  string
@@ -14,7 +16,7 @@ var binTests = []struct {
 func TestHexToBinary(t *testing.T) {
 	for _, test := range binTests {
 		t.Run(test.msg, func(t *testing.T) {
-			actual, _ := HexToBinary(test.msg)
+			actual, _ := hexToBinary(test.msg)
 			if actual != test.want {
 				t.Errorf("Binary incorrect, wanted %v got %v", test.want, actual)
 			}
@@ -84,7 +86,7 @@ var crcTests = []struct {
 func TestCrc(t *testing.T) {
 	for _, test := range crcTests {
 		t.Run(test.msg, func(t *testing.T) {
-			actual, _ := Crc(test.msg, false)
+			actual, _ := crc(test.msg, false)
 			if actual != test.want {
 				t.Errorf("CRC incorrect, wanted %v got %v", test.want, actual)
 			}
@@ -94,12 +96,12 @@ func TestCrc(t *testing.T) {
 
 func BenchmarkHexToBinary(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		HexToBinary("8D4840D6202CC371C32CE0576098")
+		hexToBinary("8D4840D6202CC371C32CE0576098")
 	}
 }
 
 func BenchmarkCrc(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		Crc("8D406B902015A678D4D220AA4BDA", false)
+		crc("8D406B902015A678D4D220AA4BDA", false)
 	}
 }

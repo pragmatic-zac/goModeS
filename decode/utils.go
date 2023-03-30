@@ -1,4 +1,4 @@
-package internal
+package decode
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-func HexToBinary(hex string) (string, error) {
+func hexToBinary(hex string) (string, error) {
 	m := map[string]string{
 		"0": "0000",
 		"1": "0001",
@@ -37,8 +37,8 @@ func HexToBinary(hex string) (string, error) {
 	return bin.String(), nil
 }
 
-func Df(msg string) (int, error) {
-	bin, err := HexToBinary(msg[0:2])
+func df(msg string) (int, error) {
+	bin, err := hexToBinary(msg[0:2])
 	if err != nil {
 		return 0, err
 	}
@@ -51,7 +51,7 @@ func Df(msg string) (int, error) {
 	return int(df), nil
 }
 
-func Icao(msg string) (string, error) {
+func icao(msg string) (string, error) {
 	df, err := Df(msg)
 	if err != nil {
 		return "", err
@@ -63,7 +63,7 @@ func Icao(msg string) (string, error) {
 	if df == 11 || df == 17 || df == 18 {
 		addr = msg[2:8]
 	} else if contains(&filter, &df) {
-		c0, _ := Crc(msg, true)
+		c0, _ := crc(msg, true)
 		c1, _ := strconv.ParseInt(msg[len(msg)-6:], 16, 32)
 		result := c0 ^ int(c1)
 		addr = fmt.Sprintf("%06X", result)
@@ -72,7 +72,7 @@ func Icao(msg string) (string, error) {
 	return addr, nil
 }
 
-func Typecode(msg string) (int64, error) {
+func typecode(msg string) (int64, error) {
 	df, err := Df(msg)
 	if err != nil {
 		return 0, err
@@ -82,20 +82,20 @@ func Typecode(msg string) (int64, error) {
 		return 0, nil
 	}
 
-	bin, err := HexToBinary(msg[8:10])
+	bin, err := hexToBinary(msg[8:10])
 	if err != nil {
 		return 0, nil
 	}
 
-	typecode, err := strconv.ParseInt(bin[0:5], 2, 32)
+	tc, err := strconv.ParseInt(bin[0:5], 2, 32)
 	if err != nil {
 		return 0, err
 	}
 
-	return typecode, nil
+	return tc, nil
 }
 
-func Modulo(x float64, y float64) float64 {
+func modulo(x float64, y float64) float64 {
 	if y == 0.0 {
 		panic("Y may not be zero.") // panic or error?
 	}
@@ -103,7 +103,7 @@ func Modulo(x float64, y float64) float64 {
 	return x - y*math.Floor(x/y)
 }
 
-func CprNL(lat float64) float64 {
+func cprNL(lat float64) float64 {
 	if lat == 0 {
 		return 59
 	}
@@ -125,12 +125,12 @@ func CprNL(lat float64) float64 {
 	return nl
 }
 
-func RoundFloat(val float64, precision uint) float64 {
+func roundFloat(val float64, precision uint) float64 {
 	ratio := math.Pow(10, float64(precision))
 	return math.Round(val*ratio) / ratio
 }
 
-func Crc(msg string, encode bool) (int, error) {
+func crc(msg string, encode bool) (int, error) {
 	if len(msg) != 28 {
 		return 0, errors.New("message should be exactly 28 characters long")
 	}
@@ -141,7 +141,7 @@ func Crc(msg string, encode bool) (int, error) {
 		msg = msg[:len(msg)-6] + "000000"
 	}
 
-	msgBin, err := HexToBinary(msg)
+	msgBin, err := hexToBinary(msg)
 	if err != nil {
 		return 0, err
 	}
@@ -171,7 +171,7 @@ func Crc(msg string, encode bool) (int, error) {
 	return result, nil
 }
 
-func Altitude(binString string) (int, error) {
+func altitude(binString string) (int, error) {
 	if len(binString) != 13 {
 		// also check to make sure it's binary?
 		return 0, errors.New("binary string must be 13 bits long")
@@ -182,8 +182,8 @@ func Altitude(binString string) (int, error) {
 		return 0, errors.New("input must be a binary string")
 	}
 
-	Mbit := string(binString[6])
-	Qbit := string(binString[8])
+	mbit := string(binString[6])
+	qbit := string(binString[8])
 
 	r, _ := strconv.ParseInt(binString, 2, 64)
 	if r == 0 {
@@ -192,13 +192,13 @@ func Altitude(binString string) (int, error) {
 
 	var alt int
 
-	if Mbit == "0" { // unit in ft
-		if Qbit == "1" { // 25ft interval
+	if mbit == "0" { // unit in ft
+		if qbit == "1" { // 25ft interval
 			vbin := binString[:6] + binString[7:8] + binString[9:]
 			vint, _ := strconv.ParseInt(vbin, 2, 64)
 			alt = int(vint)*25 - 1000
 		}
-		if Qbit == "0" { // 100ft interval, above 50187.5ft
+		if qbit == "0" { // 100ft interval, above 50187.5ft
 			C1 := string(binString[0])
 			A1 := string(binString[1])
 			C2 := string(binString[2])
@@ -216,7 +216,7 @@ func Altitude(binString string) (int, error) {
 		}
 	}
 
-	if Mbit == "1" { // unit in meter
+	if mbit == "1" { // unit in meter
 		vBin := binString[:6] + binString[7:]
 		vInt, _ := strconv.ParseInt(vBin, 2, 64)
 		alt = int(float64(vInt) * 3.28084) // convert to ft
@@ -277,6 +277,7 @@ func contains(s *[]int, e *int) bool {
 	return false
 }
 
+// CleanMessage removes the '*' and ';' from a raw formatted message.
 func CleanMessage(dirtyMsg string) string {
 	charsToRemove := "*;"
 

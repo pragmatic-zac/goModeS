@@ -126,19 +126,6 @@ func TestSurfaceVelocity(t *testing.T) {
 		t.Fatalf("Track incorrect, wanted %v got %v", wantedTrk, v.Angle)
 	}
 
-	//for iByte := 0; iByte < len(mBytes)-3; iByte++ {
-	//	for ibit := 0; ibit < 8; ibit++ {
-	//		mask := 0x80 >> int(ibit)
-	//		bits := mBytes[iByte] & mask
-	//
-	//		if bits > 0 {
-	//			mBytes[iByte] = mBytes[iByte] ^ (G[0] >> ibit)
-	//			mBytes[iByte+1] = mBytes[iByte+1] ^ (0xFF & ((G[0]<<8 - ibit) | (G[1] >> ibit)))
-	//			mBytes[iByte+2] = mBytes[iByte+2] ^ (0xFF & ((G[1]<<8 - ibit) | (G[2] >> ibit)))
-	//			mBytes[iByte+3] = mBytes[iByte+3] ^ (0xFF & ((G[2]<<8 - ibit) | (G[3] >> ibit)))
-	//		}
-	//	}
-	//}
 	if v.VertRate != int32(wantedVertRate) {
 		t.Fatalf("Vertical rate incorrect, wanted %v got %v", wantedVertRate, v.VertRate)
 	}

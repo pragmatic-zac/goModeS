@@ -1,4 +1,4 @@
-package commands
+package main
 
 import (
 	"fmt"
@@ -11,7 +11,7 @@ var rootCmd = &cobra.Command{
 	Short: "goModeS is an ADS-B message decoder",
 	Long:  `goModeS is a lightweight ADS-B message decoder built using Go.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		//println("this is the root command")
+
 	},
 }
 

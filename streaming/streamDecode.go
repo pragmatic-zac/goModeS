@@ -2,13 +2,12 @@ package streaming
 
 import (
 	"github.com/pragmatic-zac/goModeS/decode"
-	"github.com/pragmatic-zac/goModeS/internal"
 	models "github.com/pragmatic-zac/goModeS/models"
 	"time"
 )
 
 func DecodeAdsB(msg string, flightsState map[string]models.Flight, latRef float64, lonRef float64) {
-	cleanedMsg := internal.CleanMessage(msg)
+	cleanedMsg := decode.CleanMessage(msg)
 
 	icao, _ := decode.Icao(cleanedMsg)
 	tc, _ := decode.Typecode(cleanedMsg)

@@ -1,20 +1,33 @@
+// Package decode provides methods for decoding ADS-B messages.
 package decode
 
 import (
 	"errors"
-	"github.com/pragmatic-zac/goModeS/internal"
 	"math"
 	"strconv"
 	"strings"
 	"time"
 )
 
-// TODO: move these to models
+// Position is a struct that represents the calculated airborne position information, including the latitude and longitude.
+//
+// Fields:
+//   - Latitude: a float64 that represents the latitude of the airborne position.
+//   - Longitude: a float64 that represents the longitude of the airborne position.
 type Position struct {
 	Latitude  float64
 	Longitude float64
 }
 
+// Velocity is a struct that represents the calculated airborne velocity information, including the speed, angle,
+// vertical rate, and speed type.
+//
+// Fields:
+//   - Speed: a float64 that represents the speed of the airborne velocity in knots.
+//   - Angle: a float64 that represents the angle of the airborne velocity in degrees.
+//   - VertRate: an int32 that represents the vertical rate of the airborne velocity in feet per minute.
+//   - SpeedType: a string that represents the type of speed, either "GS" for ground speed, "IAS" for indicated air speed, or "TAS" for true air speed.
+//   - RateSource: a string that represents the source of the vertical rate, either "GNSS" or "BARO".
 type Velocity struct {
 	Speed      float64
 	Angle      float64
@@ -23,6 +36,18 @@ type Velocity struct {
 	RateSource string
 }
 
+// PositionInput is a struct that represents the necessary information to calculate the airborne position, including the
+// message strings, time stamps, and latitude and longitude reference points.
+//
+// Fields:
+//   - Msg0: 28 character hexadecimal string message, even frame.
+//   - Msg1: 28 character hexadecimal string message, odd frame.
+//   - T0: a time.Time that represents the time stamp of the even message.
+//   - T1: a time.Time that represents the time stamp of the odd message.
+//   - LatRef: a pointer to a float64 that represents the latitude reference point used to calculate the airborne position.
+//     This field may be nil if no reference point is needed.
+//   - LonRef: a pointer to a float64 that represents the longitude reference point used to calculate the airborne position.
+//     This field may be nil if no reference point is needed.
 type PositionInput struct {
 	Msg0   string
 	Msg1   string
@@ -32,8 +57,16 @@ type PositionInput struct {
 	LonRef *float64
 }
 
+// Df is a function that decodes the Downlink Format value.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - int: an integer that represents the result of the `df` function if successful.
+//   - error: an error that indicates whether an error occurred during the processing of the message.
 func Df(msg string) (int, error) {
-	res, err := internal.Df(msg)
+	res, err := df(msg)
 	if err != nil {
 		return 0, err
 	}
@@ -41,8 +74,16 @@ func Df(msg string) (int, error) {
 	return res, nil
 }
 
+// Icao is a function that decodes the ICAO value. Usable with DF4, DF5, DF20, DF21 messages.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - string: a string that represents the ICAO value if successful.
+//   - error: an error that indicates whether an error occurred during the processing of the message.
 func Icao(msg string) (string, error) {
-	res, err := internal.Icao(msg)
+	res, err := icao(msg)
 	if err != nil {
 		return "", err
 	}
@@ -50,8 +91,16 @@ func Icao(msg string) (string, error) {
 	return res, nil
 }
 
+// Typecode is a function that decodes the typecode value of an ADS-B message.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - int: an integer that represents the message typecode if successful.
+//   - error: an error that indicates whether an error occurred during the processing of the message.
 func Typecode(msg string) (int64, error) {
-	res, err := internal.Typecode(msg)
+	res, err := typecode(msg)
 	if err != nil {
 		return 0, err
 	}
@@ -59,8 +108,16 @@ func Typecode(msg string) (int64, error) {
 	return res, nil
 }
 
+// Category is a function that decodes the category value of an ADS-B message.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - int: an integer that represents the message category if successful.
+//   - error: an error that indicates whether an error occurred during the processing of the message.
 func Category(msg string) (int64, error) {
-	tc, err := internal.Typecode(msg)
+	tc, err := typecode(msg)
 	if err != nil {
 		return 0, err
 	}
@@ -69,7 +126,7 @@ func Category(msg string) (int64, error) {
 		err = errors.New("not an identification message")
 	}
 
-	msgBin, err := internal.HexToBinary(msg)
+	msgBin, err := hexToBinary(msg)
 	if err != nil {
 		return 0, err
 	}
@@ -79,10 +136,18 @@ func Category(msg string) (int64, error) {
 	return strconv.ParseInt(bin[5:8], 2, 32)
 }
 
+// Callsign is a function that decodes the callsign value in an ADS-B message.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - string: a string that represents the aircraft's callsign if successful.
+//   - error: an error that indicates whether an error occurred during the processing of the message.
 func Callsign(msg string) (string, error) {
 	lookup := "#ABCDEFGHIJKLMNOPQRSTUVWXYZ##### ###############0123456789######"
 
-	bin, err := internal.HexToBinary(msg[8:22])
+	bin, err := hexToBinary(msg[8:22])
 	if err != nil {
 		println(err)
 	}
@@ -101,12 +166,22 @@ func Callsign(msg string) (string, error) {
 	return callsign.String(), nil
 }
 
+// AirbornePosition is a function that takes a PositionInput as input and returns a Position and an error.
+// It calculates the airborne position based on the given input and returns the result if successful.
+//
+// Parameters:
+//   - input: a struct that contains the necessary information to calculate the airborne position
+//
+// Returns:
+//   - Position: a struct that contains the calculated airborne position information, including the latitude
+//     and longitude.
+//   - error: an error that indicates whether an error occurred during the calculation of the airborne position.
 func AirbornePosition(input PositionInput) (Position, error) {
-	bin0, err := internal.HexToBinary(input.Msg0)
+	bin0, err := hexToBinary(input.Msg0)
 	if err != nil {
 		return Position{}, err
 	}
-	bin1, err := internal.HexToBinary(input.Msg1)
+	bin1, err := hexToBinary(input.Msg1)
 	if err != nil {
 		return Position{}, err
 	}
@@ -157,7 +232,7 @@ func AirbornePosition(input PositionInput) (Position, error) {
 
 	t := float64(j % 59)
 
-	latEven := airDLatEven * (internal.Modulo(float64(j), 60) + latCprE)
+	latEven := airDLatEven * (modulo(float64(j), 60) + latCprE)
 	latOdd := airDLatOdd * (t + latCprO)
 
 	if latEven >= 270 {
@@ -168,7 +243,7 @@ func AirbornePosition(input PositionInput) (Position, error) {
 		latOdd = latOdd - 360
 	}
 
-	if internal.CprNL(latEven) != internal.CprNL(latOdd) {
+	if cprNL(latEven) != cprNL(latOdd) {
 		return Position{}, err
 	}
 
@@ -178,23 +253,23 @@ func AirbornePosition(input PositionInput) (Position, error) {
 	if input.T0.After(input.T1) {
 		lat = latEven
 
-		var nl = internal.CprNL(lat)
+		var nl = cprNL(lat)
 
 		ni := math.Max(nl, 1)
 
 		m := math.Floor(lonCprE*(nl-1) - lonCprO*nl + 0.5)
 
-		lon = (360 / ni) * (internal.Modulo(m, ni) + lonCprE)
+		lon = (360 / ni) * (modulo(m, ni) + lonCprE)
 	} else {
 		lat = latOdd
 
-		nl := internal.CprNL(lat)
+		nl := cprNL(lat)
 
 		ni := math.Max(float64(nl)-1.0, 1)
 
 		m := math.Floor(lonCprE*(nl-1) - lonCprO*nl + 0.5)
 
-		lon = (360 / ni) * (internal.Modulo(m, ni) + lonCprO)
+		lon = (360 / ni) * (modulo(m, ni) + lonCprO)
 	}
 
 	if lon > 180.0 {
@@ -202,15 +277,28 @@ func AirbornePosition(input PositionInput) (Position, error) {
 	}
 
 	pos := Position{
-		Latitude:  internal.RoundFloat(lat, 5),
-		Longitude: internal.RoundFloat(lon, 5),
+		Latitude:  roundFloat(lat, 5),
+		Longitude: roundFloat(lon, 5),
 	}
 
 	return pos, nil
 }
 
+// AirbornePositionWithRef is a function that takes a message, a latitude reference, and a longitude reference as input,
+// and returns a Position and an error. It calculates the airborne position based on the given message and reference points,
+// and returns the result if successful.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//   - latRef: a float64 that represents the latitude reference point used to calculate the airborne position.
+//   - lonRef: a float64 that represents the longitude reference point used to calculate the airborne position.
+//
+// Returns:
+//   - Position: a struct that contains the calculated airborne position information, including the latitude
+//     and longitude.
+//   - error: an error that indicates whether an error occurred during the calculation of the airborne position.
 func AirbornePositionWithRef(msg string, latRef float64, lonRef float64) (Position, error) {
-	msgBin, err := internal.HexToBinary(msg)
+	msgBin, err := hexToBinary(msg)
 	if err != nil {
 		return Position{}, err
 	}
@@ -241,7 +329,7 @@ func AirbornePositionWithRef(msg string, latRef float64, lonRef float64) (Positi
 
 	lat := dLat * (j + cprLat)
 
-	ni := internal.CprNL(lat) - float64(i)
+	ni := cprNL(lat) - float64(i)
 
 	var dLon float64
 	if ni > 0 {
@@ -255,19 +343,30 @@ func AirbornePositionWithRef(msg string, latRef float64, lonRef float64) (Positi
 	lon := dLon * (m + cprLon)
 
 	p := Position{
-		Latitude:  internal.RoundFloat(lat, 6),
-		Longitude: internal.RoundFloat(lon, 6),
+		Latitude:  roundFloat(lat, 6),
+		Longitude: roundFloat(lon, 6),
 	}
 
 	return p, nil
 }
 
+// SurfacePosition is a function that takes a PositionInput as input and returns a Position and an error.
+// It calculates the surface position based on the given input and returns the result if successful.
+//
+// Parameters:
+//   - input: a struct that contains the necessary information to calculate the surface position, including
+//     the message strings, time stamps, and latitude and longitude reference points.
+//
+// Returns:
+//   - Position: a struct that contains the calculated surface position information, including the latitude and
+//     longitude.
+//   - error: an error that indicates whether an error occurred during the calculation of the surface position.
 func SurfacePosition(input PositionInput) (Position, error) {
-	bin0, err := internal.HexToBinary(input.Msg0)
+	bin0, err := hexToBinary(input.Msg0)
 	if err != nil {
 		return Position{}, err
 	}
-	bin1, err := internal.HexToBinary(input.Msg1)
+	bin1, err := hexToBinary(input.Msg1)
 	if err != nil {
 		return Position{}, err
 	}
@@ -320,7 +419,7 @@ func SurfacePosition(input PositionInput) (Position, error) {
 	}
 
 	// check if both are in same lat zone
-	if internal.CprNL(latE) != internal.CprNL(latO) {
+	if cprNL(latE) != cprNL(latO) {
 		return Position{}, err
 	}
 
@@ -328,13 +427,13 @@ func SurfacePosition(input PositionInput) (Position, error) {
 	var lon float64
 	if input.T0.After(input.T1) {
 		lat = latE
-		nl := internal.CprNL(latE)
+		nl := cprNL(latE)
 		ni := math.Max(nl, 1)
 		m := math.Floor(lonCprE*(nl-1.0) - lonCprO*nl + 0.5)
 		lon = (90 / ni) * (math.Mod(m, ni) + lonCprE)
 	} else {
 		lat = latO
-		nl := internal.CprNL(latO)
+		nl := cprNL(latO)
 		ni := math.Max(nl-1, 1)
 		m := math.Floor(lonCprE*(nl-1.0) - lonCprO*nl + 0.5)
 		lon = (90 / ni) * (math.Mod(m, ni) + lonCprO)
@@ -358,15 +457,28 @@ func SurfacePosition(input PositionInput) (Position, error) {
 	}
 
 	pos := Position{
-		Latitude:  internal.RoundFloat(lat, 5),
-		Longitude: internal.RoundFloat(lon, 5),
+		Latitude:  roundFloat(lat, 5),
+		Longitude: roundFloat(lon, 5),
 	}
 
 	return pos, nil
 }
 
+// SurfacePositionWithRef is a function that takes a single message, a latitude reference, and a longitude reference as input,
+// and returns a Position and an error. It calculates the surface position based on the given message and reference points,
+// and returns the result if successful.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//   - latRef: a float64 that represents the latitude reference point used to calculate the surface position.
+//   - lonRef: a float64 that represents the longitude reference point used to calculate the surface position.
+//
+// Returns:
+//   - Position: a struct that contains the calculated surface position information, including the latitude and
+//     longitude.
+//   - error: an error that indicates whether an error occurred during the calculation of the surface position.
 func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (Position, error) {
-	msgBin, err := internal.HexToBinary(msg)
+	msgBin, err := hexToBinary(msg)
 	if err != nil {
 		return Position{}, err
 	}
@@ -397,7 +509,7 @@ func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (Positio
 
 	lat := dLat * (j + cprLat)
 
-	ni := internal.CprNL(lat) - float64(i)
+	ni := cprNL(lat) - float64(i)
 
 	var dLon float64
 	if ni > 0 {
@@ -411,15 +523,25 @@ func SurfacePositionWithRef(msg string, latRef float64, lonRef float64) (Positio
 	lon := dLon * (m + cprLon)
 
 	p := Position{
-		Latitude:  internal.RoundFloat(lat, 6),
-		Longitude: internal.RoundFloat(lon, 6),
+		Latitude:  roundFloat(lat, 6),
+		Longitude: roundFloat(lon, 6),
 	}
 
 	return p, nil
 }
 
+// SurfaceVelocity is a function that takes a message string as input and returns a Velocity and an error.
+// It calculates the surface velocity based on the given message and returns the result if successful.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - Velocity: a struct that contains the calculated surface velocity information, including the speed, angle,
+//     vertical rate, speed type, and rate source.
+//   - error: an error that indicates whether an error occurred during the calculation of the surface velocity.
 func SurfaceVelocity(msg string) (Velocity, error) {
-	tc, err := internal.Typecode(msg)
+	tc, err := Typecode(msg)
 	if err != nil {
 		return Velocity{}, err
 	}
@@ -429,7 +551,7 @@ func SurfaceVelocity(msg string) (Velocity, error) {
 		return Velocity{}, err
 	}
 
-	msgBin, err := internal.HexToBinary(msg)
+	msgBin, err := hexToBinary(msg)
 	if err != nil {
 		return Velocity{}, err
 	}
@@ -446,7 +568,7 @@ func SurfaceVelocity(msg string) (Velocity, error) {
 		}
 
 		trk = float64(tmp) * 360 / 128
-		trk = internal.RoundFloat(trk, 1)
+		trk = roundFloat(trk, 1)
 	} else {
 		trk = 0
 	}
@@ -490,8 +612,18 @@ func SurfaceVelocity(msg string) (Velocity, error) {
 	return v, nil
 }
 
+// AirborneVelocity is a function that takes a message string as input and returns a Velocity and an error.
+// It calculates the airborne velocity based on the given message and returns the result if successful.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - Velocity: a struct that contains the calculated airborne velocity information, including the speed, angle,
+//     vertical rate, speed type, and rate source.
+//   - error: an error that indicates whether an error occurred during the calculation of the airborne velocity.
 func AirborneVelocity(msg string) (Velocity, error) {
-	tc, err := internal.Typecode(msg)
+	tc, err := Typecode(msg)
 	if err != nil {
 		return Velocity{}, err
 	}
@@ -500,7 +632,7 @@ func AirborneVelocity(msg string) (Velocity, error) {
 		err = errors.New("not an airborne velocity message, expecting typecode 19")
 	}
 
-	msgBin, err := internal.HexToBinary(msg)
+	msgBin, err := hexToBinary(msg)
 	if err != nil {
 		return Velocity{}, err
 	}
@@ -562,7 +694,7 @@ func AirborneVelocity(msg string) (Velocity, error) {
 		if trk < 0 {
 			trk = trk + 360
 		}
-		trk = internal.RoundFloat(trk, 2)
+		trk = roundFloat(trk, 2)
 		spdType = "GS"
 	} else {
 		status, _ := strconv.Atoi(bin[13:14])
@@ -570,7 +702,7 @@ func AirborneVelocity(msg string) (Velocity, error) {
 			trk = 0
 		} else {
 			trk = float64(ew) / 1024.0 * 360.0
-			trk = internal.RoundFloat(trk, 2)
+			trk = roundFloat(trk, 2)
 		}
 
 		if ns == 0 {
@@ -627,8 +759,18 @@ func AirborneVelocity(msg string) (Velocity, error) {
 	return v, nil
 }
 
+// CombinedVelocity is a function that takes a message string as input and returns a Velocity and an error.
+// It calculates the airborne OR surface velocity based on the given message and returns the result if successful.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - Velocity: a struct that contains the calculated airborne velocity information, including the speed, angle,
+//     vertical rate, speed type, and rate source.
+//   - error: an error that indicates whether an error occurred during the calculation of the airborne velocity.
 func CombinedVelocity(msg string) (Velocity, error) {
-	tc, err := internal.Typecode(msg)
+	tc, err := Typecode(msg)
 	if err != nil {
 		return Velocity{}, err
 	}
@@ -650,8 +792,17 @@ func CombinedVelocity(msg string) (Velocity, error) {
 	}
 }
 
+// Altitude is a function that takes a message string as input and returns an integer altitude value and an error.
+// It calculates the altitude based on the given message and returns the result if successful.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - int: an integer that represents the calculated altitude in feet.
+//   - error: an error that indicates whether an error occurred during the calculation of the altitude.
 func Altitude(msg string) (int, error) {
-	tc, err := internal.Typecode(msg)
+	tc, err := Typecode(msg)
 	if err != nil {
 		return 0, err
 	}
@@ -662,7 +813,7 @@ func Altitude(msg string) (int, error) {
 		return 0, errors.New("cannot decode altitude, not an airborne position message")
 	}
 
-	bin, err := internal.HexToBinary(msg)
+	bin, err := hexToBinary(msg)
 	if err != nil {
 		return 0, err
 	}
@@ -674,7 +825,7 @@ func Altitude(msg string) (int, error) {
 	altBin := msgBin[8:20]
 	if tc < 19 {
 		altCode := altBin[0:6] + "0" + altBin[6:]
-		alt, err = internal.Altitude(altCode)
+		alt, err = altitude(altCode)
 		if err != nil {
 			return 0, err
 		}
@@ -686,8 +837,16 @@ func Altitude(msg string) (int, error) {
 	return alt, nil
 }
 
+// OddEvenFlag is a function that takes a message string as input and returns an integer.
+// It decodes whether the message is an odd or even frame.
+//
+// Parameters:
+//   - msg: 28 character hexadecimal string message.
+//
+// Returns:
+//   - int: an integer that represents the calculated odd/even flag for the message. The value can be either 0 or 1.
 func OddEvenFlag(msg string) int {
-	bin, _ := internal.HexToBinary(msg)
+	bin, _ := hexToBinary(msg)
 	res, _ := strconv.Atoi(bin[53:54])
 	return res
 }
